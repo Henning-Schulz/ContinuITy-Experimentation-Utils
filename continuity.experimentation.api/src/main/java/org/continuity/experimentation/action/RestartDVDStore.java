@@ -33,6 +33,12 @@ public class RestartDVDStore extends AbstractRestAction {
 		boolean dvdStoreIsOnline = false;
 		while (!dvdStoreIsOnline) {
 			get("/restart/dvdstore", String.class);
+			try {
+				Thread.sleep(10000);
+			} catch (InterruptedException e2) {
+				// TODO Auto-generated catch block
+				e2.printStackTrace();
+			}
 			for (int i = 0; i < 25; i++) {
 				try {
 					response = restTemplate.getForEntity("http://letslx036:8080/dvdstore/home", String.class);

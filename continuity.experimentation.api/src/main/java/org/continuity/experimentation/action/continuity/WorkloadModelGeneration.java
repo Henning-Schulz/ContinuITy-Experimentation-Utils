@@ -149,8 +149,14 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 			LOGGER.info("Workload model creation initiated. Message from server is '{}' and link is '{}'. Waiting for creation finished...", message, link);
 
 			boolean finished = false;
-			long timeout = 10000;
+			long timeout = 40000;
 			int loopCounter = 0;
+			try {
+				Thread.sleep(60000);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			while (!finished) {
 				if (loopCounter > 360) {
 					LOGGER.error("Waiting for more than one hour for the workload model to be finished. Aborting!");
