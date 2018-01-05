@@ -1,6 +1,7 @@
 package org.continuity.experimentation.experiment;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -17,7 +18,6 @@ import org.continuity.experimentation.action.continuity.JMeterTestPlanExecution;
 import org.continuity.experimentation.action.continuity.JMeterTestPlanExecution.TestPlanBundle;
 import org.continuity.experimentation.action.continuity.WorkloadModelGeneration;
 import org.continuity.experimentation.action.continuity.WorkloadTransformationAndExecution;
-import org.continuity.experimentation.action.inspectit.GetInfluxResults;
 import org.continuity.experimentation.action.inspectit.StartNewRecording;
 import org.continuity.experimentation.action.inspectit.StopRecording;
 import org.continuity.experimentation.builder.ExperimentBuilder;
@@ -41,8 +41,12 @@ public class Main {
 		IDataHolder<TestPlanBundle> chosenLoadTest = new SimpleDataHolder<TestPlanBundle>("chosen loadtest", TestPlanBundle.class);
 
 		// Set list of available TestPlanBundles
-		TestPlanBundle dummyTest = new TestPlanBundle(new File("testplan-4-50-120.json"));
-		IDataHolder<List<TestPlanBundle>> loadTestList = new SimpleDataHolder<>("loadtest list", new ArrayList<TestPlanBundle>(Arrays.asList(new TestPlanBundle[] { dummyTest })));
+		TestPlanBundle testplan1 = new TestPlanBundle(new File("testplan-1.json"));
+		TestPlanBundle testplan2 = new TestPlanBundle(new File("testplan-2.json"));
+		TestPlanBundle testplan3 = new TestPlanBundle(new File("testplan-3.json"));
+		TestPlanBundle testplan4 = new TestPlanBundle(new File("testplan-4.json"));
+		IDataHolder<List<TestPlanBundle>> loadTestList = new SimpleDataHolder<>("loadtest list",
+				new ArrayList<TestPlanBundle>(Arrays.asList(new TestPlanBundle[] { testplan1, testplan2, testplan3, testplan4 })));
 
 		IDataHolder<Date> startTimeDataHolder = new SimpleDataHolder<Date>("start time data", Date.class);
 		IDataHolder<Date> stopTimeDataHolder = new SimpleDataHolder<Date>("stop time data", Date.class);
@@ -57,8 +61,6 @@ public class Main {
 		tagHolder.set("dvdstore");
 		dataLink.set("http://172.16.145.68:8182/rest/open-xtrace/get");
 
-		loadTestList.set(new ArrayList<TestPlanBundle>(Arrays.asList(new TestPlanBundle[] { dummyTest })));
-
 		ExperimentSummarySaving saveSummary = null;
 
 		RandomSelection<TestPlanBundle> randomJmeterTestSelection = new RandomSelection<TestPlanBundle>(loadTestList, chosenLoadTest, true);
@@ -69,13 +71,14 @@ public class Main {
 
 		WorkloadModelGeneration workloadModelGeneration = new WorkloadModelGeneration("letslx037", "8080", "wessbas", tagHolder.get(), dataLink, startTimeDataHolder, stopTimeDataHolder, workloadLink);
 
-		WorkloadTransformationAndExecution workloadTransformationAndExecution = new WorkloadTransformationAndExecution("letslx037", "8080", "jmeter", tagHolder, workloadLink, 50, 120l, 50);
+		WorkloadTransformationAndExecution workloadTransformationAndExecution = new WorkloadTransformationAndExecution("letslx037", "8080", "jmeter", tagHolder, workloadLink, 50, 720l, 50);
 
 		experiment = builder.newExperiment("ICPE 18 LTB").loop(20).append(new RestartDVDStore()).append(new Delay(20000l)).append(randomJmeterTestSelection).append(new StartNewRecording(startTimeDataHolder, false))
 				.append(testPlanExecution)//
 				.append(new WaitForJmeterReport("letslx037", "8080", "jmeter-report.txt", false, chosenLoadTest))//
 				.append(stopRecording)//
-				.append(new GetInfluxResults("letslx037", "8086", false, startTimeDataHolder, stopTimeDataHolder))//
+				// .append(new GetInfluxResults("letslx037", "8086", false, startTimeDataHolder,
+				// stopTimeDataHolder))//
 				.append(workloadModelGeneration)//
 				.append(new RestartDVDStore())//
 				.append(new Delay(20000l))//
@@ -83,10 +86,12 @@ public class Main {
 				.append(new StartNewRecording(startTimeDataHolder, true))//
 				.append(new WaitForJmeterReport("letslx037", "8080", "jmeter-report.txt", true, chosenLoadTest))//
 				.append(stopRecording)//
-				.append(new GetInfluxResults("letslx037", "8086", true, startTimeDataHolder, stopTimeDataHolder))//
+				// .append(new GetInfluxResults("letslx037", "8086", true, startTimeDataHolder,
+				// stopTimeDataHolder))//
 				.append(new DataInvalidation(dataHolders)).end().end().build();//
 
-		saveSummary = new ExperimentSummarySaving(new File("").toPath(), experiment);
+		saveSummary = new ExperimentSummarySaving(Paths.get("."), experiment);
+		saveSummary.execute();
 
 		experiment.execute();
 	}
