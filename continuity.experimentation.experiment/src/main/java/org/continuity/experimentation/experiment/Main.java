@@ -12,6 +12,7 @@ import org.continuity.experimentation.action.DataInvalidation;
 import org.continuity.experimentation.action.Delay;
 import org.continuity.experimentation.action.ExperimentSummarySaving;
 import org.continuity.experimentation.action.RandomSelection;
+import org.continuity.experimentation.action.ResetDataHolder;
 import org.continuity.experimentation.action.RestartDVDStore;
 import org.continuity.experimentation.action.WaitForJmeterReport;
 import org.continuity.experimentation.action.continuity.JMeterTestPlanExecution;
@@ -56,6 +57,8 @@ public class Main {
 
 		IDataHolder<String> tagHolder = new SimpleDataHolder<>("tag", String.class);
 
+		IDataHolder<Boolean> workloadGenBroken = new SimpleDataHolder<>("workload-gen-broken", false);
+
 		List<IDataHolder<?>> dataHolders = new ArrayList<>(Arrays.asList(new IDataHolder[] { startTimeDataHolder, stopTimeDataHolder, workloadLink }));
 
 		tagHolder.set("dvdstore");
@@ -69,17 +72,22 @@ public class Main {
 
 		StopRecording stopRecording = new StopRecording(stopTimeDataHolder);
 
-		WorkloadModelGeneration workloadModelGeneration = new WorkloadModelGeneration("letslx037", "8080", "wessbas", tagHolder.get(), dataLink, startTimeDataHolder, stopTimeDataHolder, workloadLink);
+		WorkloadModelGeneration workloadModelGeneration = new WorkloadModelGeneration("letslx037", "8080", "wessbas", tagHolder.get(), dataLink, startTimeDataHolder, stopTimeDataHolder, workloadLink,
+				workloadGenBroken);
 
 		WorkloadTransformationAndExecution workloadTransformationAndExecution = new WorkloadTransformationAndExecution("letslx037", "8080", "jmeter", tagHolder, workloadLink, 50, 720l, 50);
 
-		experiment = builder.newExperiment("ICPE 18 LTB").loop(20).append(new RestartDVDStore()).append(new Delay(20000l)).append(randomJmeterTestSelection).append(new StartNewRecording(startTimeDataHolder, false))
+		experiment = builder.newExperiment("ICPE 18 LTB").loop(25) //
+				.append(new ResetDataHolder<>(workloadGenBroken, false)) //
+				.append(new RestartDVDStore()).append(new Delay(20000l)).append(randomJmeterTestSelection)
+				.append(new StartNewRecording(startTimeDataHolder, false))
 				.append(testPlanExecution)//
 				.append(new WaitForJmeterReport("letslx037", "8080", "jmeter-report.txt", false, chosenLoadTest))//
 				.append(stopRecording)//
 				// .append(new GetInfluxResults("letslx037", "8086", false, startTimeDataHolder,
 				// stopTimeDataHolder))//
 				.append(workloadModelGeneration)//
+				.branch().ifThen(() -> !workloadGenBroken.get()) // If NOT broken, do it
 				.append(new RestartDVDStore())//
 				.append(new Delay(20000l))//
 				.append(workloadTransformationAndExecution)//
@@ -88,6 +96,7 @@ public class Main {
 				.append(stopRecording)//
 				// .append(new GetInfluxResults("letslx037", "8086", true, startTimeDataHolder,
 				// stopTimeDataHolder))//
+				.end().end() // End IF; do the invalidation anyway
 				.append(new DataInvalidation(dataHolders)).end().end().build();//
 
 		saveSummary = new ExperimentSummarySaving(Paths.get("."), experiment);

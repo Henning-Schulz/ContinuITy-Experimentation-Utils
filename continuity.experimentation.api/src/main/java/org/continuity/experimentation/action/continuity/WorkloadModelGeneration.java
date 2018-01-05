@@ -36,6 +36,8 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 	private final IDataHolder<String> dataLink;
 	private final IDataHolder<String> workloadLink;
 
+	private final IDataHolder<Boolean> brokenHolder;
+
 	/**
 	 * Creates a new workload model generation action.
 	 *
@@ -57,7 +59,7 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 	 *            frontend: {@code<fontend-url>/workloadmodel/get/<workload-link>}.
 	 */
 	public WorkloadModelGeneration(RestTemplate restTemplate, String host, String port, String wmType, String tag, IDataHolder<String> dataLink, IDataHolder<Date> startTimeDataHolder,
-			IDataHolder<Date> stopTimeDataHolder, IDataHolder<String> workloadLink) {
+			IDataHolder<Date> stopTimeDataHolder, IDataHolder<String> workloadLink, IDataHolder<Boolean> brokenHolder) {
 		super(host, port, restTemplate);
 
 		this.wmType = wmType;
@@ -66,6 +68,7 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 		this.stopTimeDataHolder = stopTimeDataHolder;
 		this.dataLink = dataLink;
 		this.workloadLink = workloadLink;
+		this.brokenHolder = brokenHolder;
 	}
 
 	/**
@@ -86,8 +89,8 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 	 *            frontend: {@code<fontend-url>/workloadmodel/get/<workload-link>}.
 	 */
 	public WorkloadModelGeneration(String host, String port, String wmType, String tag, IDataHolder<String> dataLink, IDataHolder<Date> startTimeDataHolder, IDataHolder<Date> stopTimeDataHolder,
-			IDataHolder<String> workloadLink) {
-		this(null, host, port, wmType, tag, dataLink, startTimeDataHolder, stopTimeDataHolder, workloadLink);
+			IDataHolder<String> workloadLink, IDataHolder<Boolean> brokenHolder) {
+		this(null, host, port, wmType, tag, dataLink, startTimeDataHolder, stopTimeDataHolder, workloadLink, brokenHolder);
 	}
 
 	/**
@@ -106,8 +109,8 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 	 *            frontend: {@code<fontend-url>/workloadmodel/get/<workload-link>}.
 	 */
 	public WorkloadModelGeneration(String host, String wmType, String tag, IDataHolder<String> dataLink, IDataHolder<Date> startTimeDataHolder, IDataHolder<Date> stopTimeDataHolder,
-			IDataHolder<String> workloadLink) {
-		this(host, "80", wmType, tag, dataLink, startTimeDataHolder, stopTimeDataHolder, workloadLink);
+			IDataHolder<String> workloadLink, IDataHolder<Boolean> brokenHolder) {
+		this(host, "80", wmType, tag, dataLink, startTimeDataHolder, stopTimeDataHolder, workloadLink, brokenHolder);
 	}
 
 	/**
@@ -115,65 +118,70 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 	 */
 	@Override
 	public void execute() {
+		try {
+			String dataLinkString;
+			JsonNodeFactory factory = new JsonNodeFactory(false);
+			ObjectNode node = factory.objectNode();
 
-		String dataLinkString;
-		JsonNodeFactory factory = new JsonNodeFactory(false);
-		ObjectNode node = factory.objectNode();
-
-		if (startTimeDataHolder.isSet() && stopTimeDataHolder.isSet()) {
-			Date startTime = startTimeDataHolder.get();
-			Date stopTime = stopTimeDataHolder.get();
-			String pattern = "yyyy/MM/dd/HH:mm:ss";
-			SimpleDateFormat format = new SimpleDateFormat(pattern);
-			String startTimeString = format.format(startTime);
-			String stopTimeString = format.format(stopTime);
-			dataLinkString = dataLink.get() + "?fromDate=" + startTimeString + "&toDate=" + stopTimeString;
-		} else {
-			dataLinkString = dataLink.get();
-		}
-		node.put("data", dataLinkString);
-		node.put("tag", tag);
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-
-		HttpEntity<String> entity = new HttpEntity<String>(node.toString(), headers);
-
-		Map<?, ?> reponse = post("/workloadmodel/" + wmType + "/create", Map.class, entity);
-
-		String message = reponse.get("message").toString();
-		String link = reponse.get("link").toString();
-
-		if (link == null) {
-			LOGGER.error("The response did not contain a link! Message from server: '{}'", message);
-		} else {
-			LOGGER.info("Workload model creation initiated. Message from server is '{}' and link is '{}'. Waiting for creation finished...", message, link);
-
-			boolean finished = false;
-			long timeout = 40000;
-			int loopCounter = 0;
-			try {
-				Thread.sleep(60000);
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if (startTimeDataHolder.isSet() && stopTimeDataHolder.isSet()) {
+				Date startTime = startTimeDataHolder.get();
+				Date stopTime = stopTimeDataHolder.get();
+				String pattern = "yyyy/MM/dd/HH:mm:ss";
+				SimpleDateFormat format = new SimpleDateFormat(pattern);
+				String startTimeString = format.format(startTime);
+				String stopTimeString = format.format(stopTime);
+				dataLinkString = dataLink.get() + "?fromDate=" + startTimeString + "&toDate=" + stopTimeString;
+			} else {
+				dataLinkString = dataLink.get();
 			}
-			while (!finished) {
-				if (loopCounter > 360) {
-					LOGGER.error("Waiting for more than one hour for the workload model to be finished. Aborting!");
-					break;
+			node.put("data", dataLinkString);
+			node.put("tag", tag);
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_JSON);
+
+			HttpEntity<String> entity = new HttpEntity<String>(node.toString(), headers);
+
+			Map<?, ?> reponse = post("/workloadmodel/" + wmType + "/create", Map.class, entity);
+
+			String message = reponse.get("message").toString();
+			String link = reponse.get("link").toString();
+
+			if (link == null) {
+				LOGGER.error("The response did not contain a link! Message from server: '{}'", message);
+			} else {
+				LOGGER.info("Workload model creation initiated. Message from server is '{}' and link is '{}'. Waiting for creation finished...", message, link);
+
+				boolean finished = false;
+				long timeout = 40000;
+				int loopCounter = 0;
+				try {
+					Thread.sleep(60000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
+				while (!finished) {
+					if (loopCounter > 360) {
+						LOGGER.error("Waiting for more than one hour for the workload model to be finished. Aborting!");
+						break;
+					}
 
-				Map<?, ?> waitResponse = get("/workloadmodel/wait/" + link + "?timeout=" + timeout, Map.class);
+					Map<?, ?> waitResponse = get("/workloadmodel/wait/" + link + "?timeout=" + timeout, Map.class);
 
-				if ((waitResponse != null) && !waitResponse.isEmpty()) {
-					finished = true;
+					if ((waitResponse != null) && !waitResponse.isEmpty()) {
+						finished = true;
+					}
+
+					loopCounter++;
 				}
-
-				loopCounter++;
 			}
-		}
 
-		workloadLink.set(link);
+			workloadLink.set(link);
+		} catch (Exception e) {
+			LOGGER.error("Something went wrong during workload model creation!");
+			e.printStackTrace();
+			brokenHolder.set(true);
+		}
 	}
 
 }

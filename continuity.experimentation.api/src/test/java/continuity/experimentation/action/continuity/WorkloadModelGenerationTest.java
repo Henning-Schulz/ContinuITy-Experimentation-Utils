@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.continuity.experimentation.action.continuity.WorkloadModelGeneration;
+import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.data.SimpleDataHolder;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,11 +37,13 @@ public class WorkloadModelGenerationTest {
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setup() {
+		IDataHolder<Boolean> workloadGenBroken = new SimpleDataHolder<>("workload-gen-broken", false);
+
 		restMock = Mockito.mock(RestTemplate.class);
 		workingGenerator = new WorkloadModelGeneration(restMock, "localhost", "8080", "ok", "WorkloadModelGenerationTest", input, new SimpleDataHolder<>("startTime", new Date()),
-				new SimpleDataHolder<>("startTime", new Date()), output);
+				new SimpleDataHolder<>("startTime", new Date()), output, workloadGenBroken);
 		errorGenerator = new WorkloadModelGeneration(restMock, "localhost", "8080", "error", "WorkloadModelGenerationTest", input, new SimpleDataHolder<>("startTime", new Date()),
-				new SimpleDataHolder<>("startTime", new Date()), output);
+				new SimpleDataHolder<>("startTime", new Date()), output, workloadGenBroken);
 
 		Map<String, String> returnMap = new HashMap<>();
 		returnMap.put("message", RETURN_MESSAGE);
