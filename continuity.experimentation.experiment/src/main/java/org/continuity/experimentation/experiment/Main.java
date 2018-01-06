@@ -76,7 +76,7 @@ public class Main {
 		WorkloadModelGeneration workloadModelGeneration = new WorkloadModelGeneration("letslx037", "8080", "wessbas", tagHolder.get(), dataLink, startTimeDataHolder, stopTimeDataHolder, workloadLink,
 				workloadGenBroken);
 
-		WorkloadTransformationAndExecution workloadTransformationAndExecution = new WorkloadTransformationAndExecution("letslx037", "8080", "jmeter", tagHolder, workloadLink, 50, 720l, 50);
+		WorkloadTransformationAndExecution workloadTransformationAndExecution = new WorkloadTransformationAndExecution("letslx037", "8080", "jmeter", tagHolder, workloadLink, 40, 720l, 50);
 
 		experiment = builder.newExperiment("ICPE 18 LTB").loop(25) //
 				.append(new ResetDataHolder<>(workloadGenBroken, false)) //
