@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -154,15 +155,9 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 				boolean finished = false;
 				long timeout = 40000;
 				int loopCounter = 0;
-				try {
-					Thread.sleep(60000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
 				while (!finished) {
-					if (loopCounter > 360) {
-						LOGGER.error("Waiting for more than one hour for the workload model to be finished. Aborting!");
+					if (loopCounter > 180) {
+						LOGGER.error("Waiting for more than half an hour for the workload model to be finished. Aborting!");
 						break;
 					}
 
@@ -177,9 +172,13 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 			}
 
 			workloadLink.set(link);
-		} catch (Exception e) {
-			LOGGER.error("Something went wrong during workload model creation!");
+		} catch (HttpServerErrorException e) {
+			LOGGER.error("Error response from server when waiting for workload model: {} ({}): {}", e.getStatusCode(), e.getStatusCode().getReasonPhrase(), e.getResponseBodyAsString());
 			e.printStackTrace();
+			brokenHolder.set(true);
+		} catch (Exception e2) {
+			LOGGER.error("Unknown error during workload model creation! Aborting this run.");
+			e2.printStackTrace();
 			brokenHolder.set(true);
 		}
 	}

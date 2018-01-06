@@ -3,6 +3,7 @@ package org.continuity.experimentation.action.inspectit;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -15,8 +16,13 @@ import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.Query;
 import org.influxdb.dto.QueryResult;
 import org.influxdb.dto.QueryResult.Result;
+import org.influxdb.dto.QueryResult.Series;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GetInfluxResults implements IExperimentAction {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(GetInfluxResults.class);
 	/**
 	 * reference loadtest report path
 	 */
@@ -35,6 +41,9 @@ public class GetInfluxResults implements IExperimentAction {
 
 	private static final String DB_NAME = INFLUX_USER;
 
+	private static final String FILE_EXT = ".csv";
+	private static final String SEPARATOR = ";";
+
 	/**
 	 * InfluxDB connector.
 	 */
@@ -52,7 +61,8 @@ public class GetInfluxResults implements IExperimentAction {
 
 	private boolean generatedLoadtest;
 
-	private static int runCount = 0;
+	// Will be increased before the first iteration
+	private static int runCount = -1;
 
 	public GetInfluxResults(String host, String port, boolean generatedLoadtest, IDataHolder<Date> startTime, IDataHolder<Date> stopTime) {
 		influxDB = InfluxDBFactory.connect("http://" + host + ':' + port, INFLUX_USER, INFLUX_PASSWORD);
@@ -68,39 +78,80 @@ public class GetInfluxResults implements IExperimentAction {
 			String path = "";
 			if (generatedLoadtest) {
 				path = "run#" + runCount + GENERATED_LOADTEST_REPORT_PATH;
-				runCount++;
 			} else {
+				runCount++;
+				// Increase count before each reference load test.
+				// (Workload model generation can fail and then, no generated load test will be
+				// executed)
 				path = "run#" + runCount + REFERENCE_LOADTEST_REPORT_PATH;
 			}
 
-			FileUtils.writeStringToFile(new File(path + CPU_MEASUREMENT), getMeasurementResults(CPU_MEASUREMENT), Charset.defaultCharset());
-			FileUtils.writeStringToFile(new File(path + MEMORY_MEASUREMENT), getMeasurementResults(MEMORY_MEASUREMENT), Charset.defaultCharset());
-			FileUtils.writeStringToFile(new File(path + BUSINESS_TRANSACTIONS_MEASUREMENT), getMeasurementResults(BUSINESS_TRANSACTIONS_MEASUREMENT), Charset.defaultCharset());
+			FileUtils.writeStringToFile(new File(path + CPU_MEASUREMENT + FILE_EXT), getMeasurementResults(CPU_MEASUREMENT), Charset.defaultCharset());
+			FileUtils.writeStringToFile(new File(path + MEMORY_MEASUREMENT + FILE_EXT), getMeasurementResults(MEMORY_MEASUREMENT), Charset.defaultCharset());
+			FileUtils.writeStringToFile(new File(path + BUSINESS_TRANSACTIONS_MEASUREMENT + FILE_EXT), getMeasurementResults(BUSINESS_TRANSACTIONS_MEASUREMENT), Charset.defaultCharset());
 
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			LOGGER.error("Error during getting Influx results for {} test of run {}.", (generatedLoadtest ? "generated" : "reference"), runCount);
 			e.printStackTrace();
 		}
 
 	}
 
 	public static void main(String[] args) {
+		// from: 2018-01-05 21:16:20
+		// to : 2018-01-05 21:26:17
 		SimpleDataHolder<Date> start = new SimpleDataHolder<Date>("start", Date.class);
 		SimpleDataHolder<Date> stop = new SimpleDataHolder<Date>("stop", Date.class);
-		Date currentDate = new Date();
-		Date pastDate = new Date();
-		pastDate.setTime(0);
-		start.set(pastDate);
-		stop.set(currentDate);
+		Calendar calendar = Calendar.getInstance();
+
+		calendar.set(2018, 0, 5, 21, 20, 00);
+		Date fromDate = calendar.getTime();
+		calendar.set(2018, 0, 5, 21, 25, 00);
+		Date toDate = calendar.getTime();
+		start.set(fromDate);
+		stop.set(toDate);
 		GetInfluxResults h = new GetInfluxResults("172.16.145.68", "8086", false, start, stop);
 		h.execute();
 	}
 
 	private String getMeasurementResults(String measurement) {
-		String queryString = String.format("SELECT * FROM %s WHERE time >= %d AND time <= %d", measurement, startTime.get().getTime(), stopTime.get().getTime() * 1000000);
+		String queryString = String.format("SELECT * FROM %s WHERE time >= %d AND time <= %d", measurement, startTime.get().getTime() * 1000000, stopTime.get().getTime() * 1000000);
 		Query query = new Query(queryString, DB_NAME);
 		QueryResult queryResult = influxDB.query(query);
 		List<Result> result = queryResult.getResults();
-		return result.get(0).getSeries().toString();
+		Series series = result.get(0).getSeries().get(0);
+
+		StringBuilder builder = new StringBuilder();
+
+		boolean first = true;
+		for (String header : series.getColumns()) {
+			if (first) {
+				first = false;
+			} else {
+				builder.append(SEPARATOR);
+			}
+
+			builder.append(header);
+		}
+
+		builder.append("\n");
+
+		for (List<Object> row : series.getValues()) {
+			first = true;
+
+			for (Object value : row) {
+				if (first) {
+					first = false;
+				} else {
+					builder.append(SEPARATOR);
+				}
+
+				builder.append(value);
+			}
+
+			builder.append("\n");
+		}
+
+		return builder.toString();
 	}
 }

@@ -28,7 +28,8 @@ public class WaitForJmeterReport extends AbstractRestAction {
 	/**
 	 * run count
 	 */
-	private static int runCount = 0;
+	// Will be increased before the first iteration
+	private static int runCount = -1;
 
 	/**
 	 * The desired report destination.
@@ -47,7 +48,7 @@ public class WaitForJmeterReport extends AbstractRestAction {
 
 	/**
 	 * Constructor.
-	 * 
+	 *
 	 * @param reportDestination
 	 *            the destination, where the report should be stored (including the filename).
 	 * @param host
@@ -81,8 +82,11 @@ public class WaitForJmeterReport extends AbstractRestAction {
 				File manipulatedFile = null;
 				if(generatedLoadtest) {
 					manipulatedFile = new File("run#" + runCount + GENERATED_LOADTEST_REPORT_PATH + file.getName());
-					runCount++;
 				} else {
+					// Increase count before each reference load test.
+					// (Workload model generation can fail and then, no generated load test will be
+					// executed)
+					runCount++;
 					manipulatedFile = new File("run#" + runCount + REFERENCE_LOADTEST_REPORT_PATH + file.getName());
 				}
 				FileUtils.writeStringToFile(manipulatedFile, report, Charset.defaultCharset());

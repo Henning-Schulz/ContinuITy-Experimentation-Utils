@@ -19,6 +19,7 @@ import org.continuity.experimentation.action.continuity.JMeterTestPlanExecution;
 import org.continuity.experimentation.action.continuity.JMeterTestPlanExecution.TestPlanBundle;
 import org.continuity.experimentation.action.continuity.WorkloadModelGeneration;
 import org.continuity.experimentation.action.continuity.WorkloadTransformationAndExecution;
+import org.continuity.experimentation.action.inspectit.GetInfluxResults;
 import org.continuity.experimentation.action.inspectit.StartNewRecording;
 import org.continuity.experimentation.action.inspectit.StopRecording;
 import org.continuity.experimentation.builder.ExperimentBuilder;
@@ -84,8 +85,7 @@ public class Main {
 				.append(testPlanExecution)//
 				.append(new WaitForJmeterReport("letslx037", "8080", "jmeter-report.txt", false, chosenLoadTest))//
 				.append(stopRecording)//
-				// .append(new GetInfluxResults("letslx037", "8086", false, startTimeDataHolder,
-				// stopTimeDataHolder))//
+				.append(new GetInfluxResults("letslx037", "8086", false, startTimeDataHolder, stopTimeDataHolder))//
 				.append(workloadModelGeneration)//
 				.branch().ifThen(() -> !workloadGenBroken.get()) // If NOT broken, do it
 				.append(new RestartDVDStore())//
@@ -94,13 +94,12 @@ public class Main {
 				.append(new StartNewRecording(startTimeDataHolder, true))//
 				.append(new WaitForJmeterReport("letslx037", "8080", "jmeter-report.txt", true, chosenLoadTest))//
 				.append(stopRecording)//
-				// .append(new GetInfluxResults("letslx037", "8086", true, startTimeDataHolder,
-				// stopTimeDataHolder))//
+				.append(new GetInfluxResults("letslx037", "8086", true, startTimeDataHolder, stopTimeDataHolder))//
 				.end().end() // End IF; do the invalidation anyway
 				.append(new DataInvalidation(dataHolders)).end().end().build();//
 
 		saveSummary = new ExperimentSummarySaving(Paths.get("."), experiment);
-		saveSummary.execute();
+		// saveSummary.execute();
 
 		experiment.execute();
 	}
