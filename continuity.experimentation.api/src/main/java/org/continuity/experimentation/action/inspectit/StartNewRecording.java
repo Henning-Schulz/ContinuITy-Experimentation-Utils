@@ -80,6 +80,22 @@ public class StartNewRecording extends AbstractRestAction {
 		this.timeDataHolder = timeDataHolder;
 	}
 
+	/**
+	 * Constructor. Uses the default port 8182.
+	 *
+	 * @param storageName
+	 *            name of new storage
+	 * @param timeDataHolder
+	 *            [OUTPUT] Holds the start time.
+	 * @param host
+	 *            Host name of the inspectIT CMR.
+	 */
+	public StartNewRecording(IDataHolder<Date> timeDataHolder, String host) {
+		super(host, "8182");
+		this.storageNameSet = false;
+		this.timeDataHolder = timeDataHolder;
+	}
+
 	@Override
 	public void execute(Context context) throws JsonParseException, JsonMappingException, IOException {
 		Date currentDate = new Date();
