@@ -28,7 +28,7 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 	private static final Logger LOGGER = LoggerFactory.getLogger(WorkloadModelGeneration.class);
 
 	private final String wmType;
-	private final String tag;
+	private final IDataHolder<String> tag;
 
 	private final IDataHolder<String> dataLink;
 	private final IDataHolder<String> workloadLink;
@@ -53,7 +53,7 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 	 *            Output data holder: The link to the generated workload model. To be used with the
 	 *            frontend: {@code<fontend-url>/workloadmodel/get/<workload-link>}.
 	 */
-	public WorkloadModelGeneration(RestTemplate restTemplate, String host, String port, String wmType, String tag, IDataHolder<String> dataLink, IDataHolder<String> workloadLink) {
+	public WorkloadModelGeneration(RestTemplate restTemplate, String host, String port, String wmType, IDataHolder<String> tag, IDataHolder<String> dataLink, IDataHolder<String> workloadLink) {
 		super(host, port, restTemplate);
 
 		this.wmType = wmType;
@@ -79,7 +79,7 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 	 *            Output data holder: The link to the generated workload model. To be used with the
 	 *            frontend: {@code<fontend-url>/workloadmodel/get/<workload-link>}.
 	 */
-	public WorkloadModelGeneration(String host, String port, String wmType, String tag, IDataHolder<String> dataLink, IDataHolder<String> workloadLink) {
+	public WorkloadModelGeneration(String host, String port, String wmType, IDataHolder<String> tag, IDataHolder<String> dataLink, IDataHolder<String> workloadLink) {
 		this(null, host, port, wmType, tag, dataLink, workloadLink);
 	}
 
@@ -98,7 +98,7 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 	 *            Output data holder: The link to the generated workload model. To be used with the
 	 *            frontend: {@code<fontend-url>/workloadmodel/get/<workload-link>}.
 	 */
-	public WorkloadModelGeneration(String host, String wmType, String tag, IDataHolder<String> dataLink, IDataHolder<String> workloadLink) {
+	public WorkloadModelGeneration(String host, String wmType, IDataHolder<String> tag, IDataHolder<String> dataLink, IDataHolder<String> workloadLink) {
 		this(host, "80", wmType, tag, dataLink, workloadLink);
 	}
 
@@ -115,7 +115,7 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 
 		dataLinkString = dataLink.get();
 		node.put("data", dataLinkString);
-		node.put("tag", tag);
+		node.put("tag", tag.get());
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -137,7 +137,7 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 			while (!finished) {
 				if (loopCounter > 180) {
 					LOGGER.error("Waiting for more than half an hour for the workload model to be finished. Aborting!");
-					break;
+					return;
 				}
 
 				Map<?, ?> waitResponse = get("/workloadmodel/wait/" + link + "?timeout=" + timeout, Map.class);
@@ -150,6 +150,7 @@ public class WorkloadModelGeneration extends AbstractRestAction {
 			}
 		}
 
+		LOGGER.info("Workload model created.");
 		workloadLink.set(link);
 	}
 

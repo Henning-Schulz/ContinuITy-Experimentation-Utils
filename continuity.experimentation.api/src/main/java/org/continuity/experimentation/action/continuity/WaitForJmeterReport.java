@@ -58,6 +58,9 @@ public class WaitForJmeterReport extends AbstractRestAction {
 		if (report != null) {
 			Path basePath = context.toPath();
 			FileUtils.writeStringToFile(basePath.resolve("jmeter-report.csv").toFile(), report, Charset.defaultCharset());
+			LOGGER.info("Wrote JMeter report to {}.", basePath);
+		} else {
+			LOGGER.warn("Could not get a JMeter report within {} attempts!", MAX_ATTEMPTS);
 		}
 	}
 

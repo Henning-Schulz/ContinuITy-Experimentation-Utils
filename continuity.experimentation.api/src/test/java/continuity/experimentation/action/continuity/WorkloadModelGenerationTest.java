@@ -8,6 +8,7 @@ import java.util.Map;
 import org.continuity.experimentation.Context;
 import org.continuity.experimentation.action.continuity.WorkloadModelGeneration;
 import org.continuity.experimentation.data.SimpleDataHolder;
+import org.continuity.experimentation.data.StaticDataHolder;
 import org.continuity.experimentation.exception.AbortInnerException;
 import org.junit.Before;
 import org.junit.Test;
@@ -40,8 +41,8 @@ public class WorkloadModelGenerationTest {
 	@Before
 	public void setup() {
 		restMock = Mockito.mock(RestTemplate.class);
-		workingGenerator = new WorkloadModelGeneration(restMock, "localhost", "8080", "ok", "WorkloadModelGenerationTest", input, output);
-		errorGenerator = new WorkloadModelGeneration(restMock, "localhost", "8080", "error", "WorkloadModelGenerationTest", input, output);
+		workingGenerator = new WorkloadModelGeneration(restMock, "localhost", "8080", "ok", StaticDataHolder.of("WorkloadModelGenerationTest"), input, output);
+		errorGenerator = new WorkloadModelGeneration(restMock, "localhost", "8080", "error", StaticDataHolder.of("WorkloadModelGenerationTest"), input, output);
 
 		Map<String, String> returnMap = new HashMap<>();
 		returnMap.put("message", RETURN_MESSAGE);

@@ -53,4 +53,9 @@ public class StaticDataHolder<T> implements IDataHolder<T> {
 		LOGGER.warn("Tried to invalidate the content, but doesn't have any effect.");
 	}
 
+	@Override
+	public String toString() {
+		return "Static: " + content;
+	}
+
 }

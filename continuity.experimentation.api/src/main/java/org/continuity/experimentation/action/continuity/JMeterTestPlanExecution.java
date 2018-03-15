@@ -16,6 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -63,10 +65,16 @@ public class JMeterTestPlanExecution extends AbstractRestAction {
 	 * {@inheritDoc}
 	 *
 	 * @throws AbortInnerException
+	 * @throws IOException
+	 * @throws JsonMappingException
+	 * @throws JsonGenerationException
 	 * @throws RuntimeException
 	 */
 	@Override
-	public void execute(Context context) throws AbortInnerException {
+	public void execute(Context context) throws AbortInnerException, JsonGenerationException, JsonMappingException, IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.writer().writeValue(context.toPath().resolve("jmeter-testplan.json").toFile(), testPlanBundle.get());
+
 		String response = post("loadtest/jmeter/execute", String.class, testPlanBundle.get());
 		LOGGER.info("Response from frontend: {}", response);
 	}

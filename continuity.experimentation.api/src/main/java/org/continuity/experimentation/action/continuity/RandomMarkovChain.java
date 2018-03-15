@@ -3,10 +3,13 @@ package org.continuity.experimentation.action.continuity;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import org.continuity.experimentation.Context;
 import org.continuity.experimentation.IExperimentAction;
@@ -107,6 +110,8 @@ public class RandomMarkovChain implements IExperimentAction {
 		}
 
 		outputDataHolder.set(markovChain);
+
+		saveMarkovChain(markovChain, context);
 	}
 
 	private String[][] readMatrixTemplate() throws IOException {
@@ -155,6 +160,20 @@ public class RandomMarkovChain implements IExperimentAction {
 		double factor = random.nextDouble() + 0.5;
 		double thinkTime = averageThinkTimeMs * factor;
 		return "norm(" + thinkTime + " " + (thinkTime / 2) + ")";
+	}
+
+	private void saveMarkovChain(String[][] markovChain, Context context) throws IOException {
+		Path folder = context.toPath();
+		String origFile = "random-markov-chain";
+		int counter = 1;
+		String currFile = origFile + ".csv";
+
+		while (folder.resolve(currFile).toFile().exists()) {
+			currFile = origFile + "-" + ++counter + ".csv";
+		}
+
+		Files.write(folder.resolve(currFile), Arrays.stream(markovChain).map(Arrays::stream).map(s -> s.reduce((a, b) -> a + "," + b)).map(Optional::get).collect(Collectors.toList()),
+				StandardOpenOption.CREATE);
 	}
 
 	@Override
