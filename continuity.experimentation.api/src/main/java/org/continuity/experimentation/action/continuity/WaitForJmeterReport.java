@@ -21,10 +21,7 @@ public class WaitForJmeterReport extends AbstractRestAction {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(WaitForJmeterReport.class);
 
-	/**
-	 * The maximum number of attempts to retrieve the report.
-	 */
-	private static final int MAX_ATTEMPTS = 200;
+	private final long timeToStopWaiting;
 
 	/**
 	 * Constructor.
@@ -35,9 +32,38 @@ public class WaitForJmeterReport extends AbstractRestAction {
 	 *            The host of the continuITy frontend.
 	 * @param port
 	 *            The port of the continuITy frontend.
+	 * @param expectedTestDuration
+	 *            The expected duration of the test.
 	 */
-	public WaitForJmeterReport(String host, String port) {
+	public WaitForJmeterReport(String host, String port, long expectedTestDuration) {
 		super(host, port);
+		this.timeToStopWaiting = System.currentTimeMillis() + Math.min(1800000, Math.max(600000, 2 * expectedTestDuration));
+	}
+
+	/**
+	 * Constructor using the default port 8080.
+	 *
+	 * @param reportDestination
+	 *            the destination, where the report should be stored (including the filename).
+	 * @param host
+	 *            The host of the continuITy frontend.
+	 * @param expectedTestDuration
+	 *            The expected duration of the test.
+	 */
+	public WaitForJmeterReport(String host, long expectedTestDuration) {
+		this(host, "8080", expectedTestDuration);
+	}
+
+	/**
+	 * Constructor using the default port 8080.
+	 *
+	 * @param reportDestination
+	 *            the destination, where the report should be stored (including the filename).
+	 * @param host
+	 *            The host of the continuITy frontend.
+	 */
+	public WaitForJmeterReport(String host) {
+		this(host, 1800000);
 	}
 
 	/**
@@ -47,8 +73,11 @@ public class WaitForJmeterReport extends AbstractRestAction {
 	public void execute(Context context) throws IOException {
 		LOGGER.info("Waiting for jmeter report of test...");
 
+		long startTime = System.currentTimeMillis();
+		long currentTime;
+
 		String report = null;
-		for (int i = 0; i < MAX_ATTEMPTS; i++) {
+		while ((currentTime = System.currentTimeMillis()) < timeToStopWaiting) {
 			report = get("/loadtest/report?timeout=20000", String.class);
 			if (report != null) {
 				break;
@@ -60,7 +89,7 @@ public class WaitForJmeterReport extends AbstractRestAction {
 			FileUtils.writeStringToFile(basePath.resolve("jmeter-report.csv").toFile(), report, Charset.defaultCharset());
 			LOGGER.info("Wrote JMeter report to {}.", basePath);
 		} else {
-			LOGGER.warn("Could not get a JMeter report within {} attempts!", MAX_ATTEMPTS);
+			LOGGER.warn("Could not get a JMeter report within {} seconds!", (currentTime - startTime) / 1000);
 		}
 	}
 

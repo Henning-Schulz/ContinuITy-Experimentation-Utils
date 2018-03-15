@@ -13,6 +13,7 @@ import org.continuity.experimentation.action.EmailReport;
 import org.continuity.experimentation.action.TargetSystem;
 import org.continuity.experimentation.action.TargetSystem.Application;
 import org.continuity.experimentation.action.continuity.AppendTimeRangeRequestParameter;
+import org.continuity.experimentation.action.continuity.FlushJMeterReports;
 import org.continuity.experimentation.action.continuity.JMeterTestPlanExecution;
 import org.continuity.experimentation.action.continuity.JMeterTestPlanExecution.TestPlanBundle;
 import org.continuity.experimentation.action.continuity.MarkovChainIntoTestPlan;
@@ -30,7 +31,7 @@ import org.continuity.experimentation.data.StaticDataHolder;
 import org.continuity.experimentation.exception.AbortException;
 
 /**
- * ContinuITy version: 0.3.48
+ * ContinuITy version: 0.3.52
  *
  * @author Henning Schulz
  *
@@ -81,11 +82,14 @@ public class Main {
 
 				.append(EmailReport.send()) //
 
+				// Flush JMeter reports
+				.append(new FlushJMeterReports(CONTINUITY_HOST))
+
 				// Restart the heat clinic and create users
 				.append(restartForReference.append()) //
 				.append(TargetSystem.restart(Application.HEAT_CLINIC, SUT_HOST)).append(TargetSystem.waitFor(Application.HEAT_CLINIC, SUT_HOST)) //
 				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, StaticDataHolder.of(new TestPlanBundle(new File("heat-clinic-register-users.json")))))
-				.append(new WaitForJmeterReport(CONTINUITY_HOST, CONTINUITY_PORT)) //
+				.append(new WaitForJmeterReport(CONTINUITY_HOST, 60000)) //
 				.append(restartForReference.remove()) //
 				.append(new Delay(20000)) //
 
@@ -94,7 +98,7 @@ public class Main {
 				.append(RandomMarkovChain.create(Paths.get("heat-clinic-allowed-transitions.csv"), 1000, markovChainHolder))
 				.append(MarkovChainIntoTestPlan.merge(StaticDataHolder.of(Paths.get("heat-clinic-reference-testplan.json")), markovChainHolder, "behavior_model", referenceTestplanHolder))
 				.append(new StartNewRecording(recordingStartTimeHolder, CONTINUITY_HOST)) //
-				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, referenceTestplanHolder)).append(new WaitForJmeterReport(CONTINUITY_HOST, "8080")) //
+				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, referenceTestplanHolder)).append(new WaitForJmeterReport(CONTINUITY_HOST, DURATION)) //
 				.append(new StopRecording(recordingStopTimeHolder, CONTINUITY_HOST)) //
 				.append(new GetInfluxResults(CONTINUITY_HOST, "8086", recordingStartTimeHolder, recordingStopTimeHolder)) //
 				.append(reference.remove()) //
@@ -113,7 +117,7 @@ public class Main {
 				.append(restartForGeneratedNoAnn.append()) //
 				.append(TargetSystem.restart(Application.HEAT_CLINIC, SUT_HOST)).append(TargetSystem.waitFor(Application.HEAT_CLINIC, SUT_HOST)) //
 				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, StaticDataHolder.of(new TestPlanBundle(new File("heat-clinic-register-users.json")))))
-				.append(new WaitForJmeterReport(CONTINUITY_HOST, CONTINUITY_PORT)) //
+				.append(new WaitForJmeterReport(CONTINUITY_HOST, 60000)) //
 				.append(restartForGeneratedNoAnn.remove()) //
 				.append(new Delay(20000)) //
 
@@ -121,7 +125,7 @@ public class Main {
 				.append(generatedNoAnn.append()) //
 				.append(new StartNewRecording(recordingStartTimeHolder, CONTINUITY_HOST))
 				.append(new WorkloadTransformationAndExecution(CONTINUITY_HOST, "jmeter", StaticDataHolder.of(TAG_NO_ANN), workloadLinkNoAnn, NUM_USERS, DURATION, NUM_USERS))
-				.append(new WaitForJmeterReport(CONTINUITY_HOST, CONTINUITY_PORT)) //
+				.append(new WaitForJmeterReport(CONTINUITY_HOST, DURATION)) //
 				.append(new StopRecording(recordingStopTimeHolder, CONTINUITY_HOST)) //
 				.append(new GetInfluxResults(CONTINUITY_HOST, "8086", recordingStartTimeHolder, recordingStopTimeHolder)) //
 				.append(generatedNoAnn.remove())
@@ -130,7 +134,7 @@ public class Main {
 				.append(restartForGeneratedWithAnn.append()) //
 				.append(TargetSystem.restart(Application.HEAT_CLINIC, SUT_HOST)).append(TargetSystem.waitFor(Application.HEAT_CLINIC, SUT_HOST)) //
 				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, StaticDataHolder.of(new TestPlanBundle(new File("heat-clinic-register-users.json")))))
-				.append(new WaitForJmeterReport(CONTINUITY_HOST, CONTINUITY_PORT)) //
+				.append(new WaitForJmeterReport(CONTINUITY_HOST, 60000)) //
 				.append(restartForGeneratedWithAnn.remove()) //
 				.append(new Delay(20000)) //
 
@@ -138,7 +142,7 @@ public class Main {
 				.append(generatedWithAnn.append()) //
 				.append(new StartNewRecording(recordingStartTimeHolder, CONTINUITY_HOST))
 				.append(new WorkloadTransformationAndExecution(CONTINUITY_HOST, "jmeter", StaticDataHolder.of(TAG), workloadLinkWithAnn, NUM_USERS, DURATION, NUM_USERS))
-				.append(new WaitForJmeterReport(CONTINUITY_HOST, CONTINUITY_PORT)) //
+				.append(new WaitForJmeterReport(CONTINUITY_HOST, DURATION)) //
 				.append(new StopRecording(recordingStopTimeHolder, CONTINUITY_HOST)) //
 				.append(new GetInfluxResults(CONTINUITY_HOST, "8086", recordingStartTimeHolder, recordingStopTimeHolder)) //
 				.append(generatedWithAnn.remove())
