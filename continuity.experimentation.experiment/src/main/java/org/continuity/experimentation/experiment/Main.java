@@ -89,7 +89,7 @@ public class Main {
 				.append(restartForReference.append()) //
 				.append(TargetSystem.restart(Application.HEAT_CLINIC, SUT_HOST)).append(TargetSystem.waitFor(Application.HEAT_CLINIC, SUT_HOST)) //
 				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, StaticDataHolder.of(new TestPlanBundle(new File("heat-clinic-register-users.json")))))
-				.append(new WaitForJmeterReport(CONTINUITY_HOST, 60000)) //
+				.append(new WaitForJmeterReport(CONTINUITY_HOST, 60)) //
 				.append(restartForReference.remove()) //
 				.append(new Delay(20000)) //
 
@@ -117,7 +117,7 @@ public class Main {
 				.append(restartForGeneratedNoAnn.append()) //
 				.append(TargetSystem.restart(Application.HEAT_CLINIC, SUT_HOST)).append(TargetSystem.waitFor(Application.HEAT_CLINIC, SUT_HOST)) //
 				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, StaticDataHolder.of(new TestPlanBundle(new File("heat-clinic-register-users.json")))))
-				.append(new WaitForJmeterReport(CONTINUITY_HOST, 60000)) //
+				.append(new WaitForJmeterReport(CONTINUITY_HOST, 60)) //
 				.append(restartForGeneratedNoAnn.remove()) //
 				.append(new Delay(20000)) //
 
@@ -134,7 +134,7 @@ public class Main {
 				.append(restartForGeneratedWithAnn.append()) //
 				.append(TargetSystem.restart(Application.HEAT_CLINIC, SUT_HOST)).append(TargetSystem.waitFor(Application.HEAT_CLINIC, SUT_HOST)) //
 				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, StaticDataHolder.of(new TestPlanBundle(new File("heat-clinic-register-users.json")))))
-				.append(new WaitForJmeterReport(CONTINUITY_HOST, 60000)) //
+				.append(new WaitForJmeterReport(CONTINUITY_HOST, 60)) //
 				.append(restartForGeneratedWithAnn.remove()) //
 				.append(new Delay(20000)) //
 

@@ -21,7 +21,7 @@ public class WaitForJmeterReport extends AbstractRestAction {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(WaitForJmeterReport.class);
 
-	private final long timeToStopWaiting;
+	private final long expectedTestDuration;
 
 	/**
 	 * Constructor.
@@ -33,11 +33,11 @@ public class WaitForJmeterReport extends AbstractRestAction {
 	 * @param port
 	 *            The port of the continuITy frontend.
 	 * @param expectedTestDuration
-	 *            The expected duration of the test.
+	 *            The expected duration of the test in seconds.
 	 */
 	public WaitForJmeterReport(String host, String port, long expectedTestDuration) {
 		super(host, port);
-		this.timeToStopWaiting = System.currentTimeMillis() + Math.min(1800000, Math.max(600000, 2 * expectedTestDuration));
+		this.expectedTestDuration = expectedTestDuration;
 	}
 
 	/**
@@ -73,6 +73,7 @@ public class WaitForJmeterReport extends AbstractRestAction {
 	public void execute(Context context) throws IOException {
 		LOGGER.info("Waiting for jmeter report of test...");
 
+		long timeToStopWaiting = System.currentTimeMillis() + Math.min((expectedTestDuration * 1000) + 1800000, Math.max(600000, 2000 * expectedTestDuration));
 		long startTime = System.currentTimeMillis();
 		long currentTime;
 
