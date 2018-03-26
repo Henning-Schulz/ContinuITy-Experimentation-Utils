@@ -194,7 +194,7 @@ public class TargetSystem {
 
 	public static enum Application {
 
-		DVD_STORE("dvdstore", "/dvdstore/home"), HEAT_CLINIC("heat-clinic", "/");
+		DVD_STORE("dvdstore", "/dvdstore/home"), HEAT_CLINIC("heat-clinic", "/"), CMR("cmr", "/rest/data/agents");
 
 		private final String name;
 

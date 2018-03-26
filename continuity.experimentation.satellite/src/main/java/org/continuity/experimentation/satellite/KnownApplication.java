@@ -5,7 +5,7 @@ import java.util.Map;
 
 public enum KnownApplication {
 
-	DVD_STORE("dvdstore", "sudo service dvdstore restart"), HEAT_CLINIC("heat-clinic", "restartHeatClinic.sh");
+	DVD_STORE("dvdstore", "sudo service dvdstore restart"), HEAT_CLINIC("heat-clinic", "restartHeatClinic.sh"), CMR("cmr", "sudo service cmr restart");
 
 	private static final Map<String, KnownApplication> APP_PER_KEY = new HashMap<>();
 

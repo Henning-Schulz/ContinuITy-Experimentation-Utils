@@ -44,9 +44,11 @@ public class Main {
 
 	private static final String CONTINUITY_PORT = "8080";
 
-	private static final int NUM_USERS = 50;
+	private static final int NUM_USERS = 75;
 
 	private static final long DURATION = 900;
+
+	private static final long THINK_TIME = 5000;
 
 	private static final String TAG = "heat-clinic";
 
@@ -82,6 +84,9 @@ public class Main {
 
 				.append(EmailReport.send()) //
 
+				// Restart CMR
+				.append(TargetSystem.restart(Application.CMR, CONTINUITY_HOST)).append(TargetSystem.waitFor(Application.CMR, CONTINUITY_HOST))
+
 				// Flush JMeter reports
 				.append(new FlushJMeterReports(CONTINUITY_HOST))
 
@@ -95,7 +100,7 @@ public class Main {
 
 				// Execute the reference test
 				.append(reference.append()) //
-				.append(RandomMarkovChain.create(Paths.get("heat-clinic-allowed-transitions.csv"), 1000, markovChainHolder))
+				.append(RandomMarkovChain.create(Paths.get("heat-clinic-allowed-transitions.csv"), THINK_TIME, markovChainHolder))
 				.append(MarkovChainIntoTestPlan.merge(StaticDataHolder.of(Paths.get("heat-clinic-reference-testplan.json")), markovChainHolder, "behavior_model", referenceTestplanHolder))
 				.append(new StartNewRecording(recordingStartTimeHolder, CONTINUITY_HOST)) //
 				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, referenceTestplanHolder)).append(new WaitForJmeterReport(CONTINUITY_HOST, DURATION)) //

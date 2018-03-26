@@ -99,19 +99,32 @@ public class RandomMarkovChain implements IExperimentAction {
 
 		markovChain[0] = template[0];
 
-		for (int row = 1; row < markovChain.length; row++) {
-			double[] markovRow = createMarkovRow(allowedTransitions[row - 1]);
+		// transitions from INITIAL
+		markovChain[1] = createBehaviorRow(allowedTransitions[0], template[1][0], 0);
 
-			markovChain[row][0] = template[row][0];
-
-			for (int col = 1; col < markovChain[row].length; col++) {
-				markovChain[row][col] = formatEntry(markovRow[col - 1]);
-			}
+		for (int row = 2; row < markovChain.length; row++) {
+			markovChain[row] = createBehaviorRow(allowedTransitions[row - 1], template[row][0], averageThinkTimeMs);
 		}
 
 		outputDataHolder.set(markovChain);
 
 		saveMarkovChain(markovChain, context);
+	}
+
+	private String[] createBehaviorRow(int[] allowedTransitions, String requestName, long thinkTime) {
+		double[] markovRow = createMarkovRow(allowedTransitions);
+
+		String[] behaviorRow = new String[allowedTransitions.length + 1];
+		behaviorRow[0] = requestName;
+
+		for (int col = 1; col < (behaviorRow.length - 1); col++) {
+			behaviorRow[col] = formatEntry(markovRow[col - 1], thinkTime);
+		}
+
+		// transitions to $
+		behaviorRow[behaviorRow.length - 1] = formatEntry(markovRow[behaviorRow.length - 2], 0);
+
+		return behaviorRow;
 	}
 
 	private String[][] readMatrixTemplate() throws IOException {
@@ -152,8 +165,8 @@ public class RandomMarkovChain implements IExperimentAction {
 		return row;
 	}
 
-	private String formatEntry(double prob) {
-		return prob + "; " + createThinkTimeString(prob > 0 ? averageThinkTimeMs : 0);
+	private String formatEntry(double prob, long thinkTime) {
+		return prob + "; " + createThinkTimeString(prob > 0 ? thinkTime : 0);
 	}
 
 	private String createThinkTimeString(long averageThinkTimeMs) {

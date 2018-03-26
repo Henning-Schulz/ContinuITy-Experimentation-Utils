@@ -73,7 +73,7 @@ public class WaitForJmeterReport extends AbstractRestAction {
 	public void execute(Context context) throws IOException {
 		LOGGER.info("Waiting for jmeter report of test...");
 
-		long timeToStopWaiting = System.currentTimeMillis() + Math.min((expectedTestDuration * 1000) + 1800000, Math.max(600000, 2000 * expectedTestDuration));
+		long timeToStopWaiting = System.currentTimeMillis() + Math.min((expectedTestDuration * 1000) + 1800000, Math.max(600000, 3000 * expectedTestDuration));
 		long startTime = System.currentTimeMillis();
 		long currentTime;
 
