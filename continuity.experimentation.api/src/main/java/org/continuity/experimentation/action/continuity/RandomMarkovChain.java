@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,6 +33,8 @@ public class RandomMarkovChain implements IExperimentAction {
 	private final IDataHolder<String[][]> outputDataHolder;
 
 	private final Random random = new Random();
+
+	private final DecimalFormat decimalFormat = new DecimalFormat("#.####");
 
 	private RandomMarkovChain(Path allowedTransitionsFilePath, long averageThinkTimeMs, IDataHolder<String[][]> outputDataHolder) {
 		this.allowedTransitionsFilePath = allowedTransitionsFilePath;
@@ -112,6 +115,11 @@ public class RandomMarkovChain implements IExperimentAction {
 	}
 
 	private String[] createBehaviorRow(int[] allowedTransitions, String requestName, long thinkTime) {
+		// TODO: dirty fix for the heat clinic
+		if ("logoutUsingGET".equals(requestName)) {
+			thinkTime = 0;
+		}
+
 		double[] markovRow = createMarkovRow(allowedTransitions);
 
 		String[] behaviorRow = new String[allowedTransitions.length + 1];
@@ -166,13 +174,13 @@ public class RandomMarkovChain implements IExperimentAction {
 	}
 
 	private String formatEntry(double prob, long thinkTime) {
-		return prob + "; " + createThinkTimeString(prob > 0 ? thinkTime : 0);
+		return decimalFormat.format(prob) + "; " + createThinkTimeString(prob > 0 ? thinkTime : 0);
 	}
 
 	private String createThinkTimeString(long averageThinkTimeMs) {
 		double factor = random.nextDouble() + 0.5;
 		double thinkTime = averageThinkTimeMs * factor;
-		return "norm(" + thinkTime + " " + (thinkTime / 2) + ")";
+		return "norm(" + decimalFormat.format(thinkTime) + " " + decimalFormat.format(thinkTime / 2.0) + ")";
 	}
 
 	private void saveMarkovChain(String[][] markovChain, Context context) throws IOException {

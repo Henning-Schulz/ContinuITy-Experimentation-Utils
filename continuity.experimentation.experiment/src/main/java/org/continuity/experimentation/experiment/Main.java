@@ -6,6 +6,7 @@ import java.util.Date;
 
 import org.continuity.experimentation.Experiment;
 import org.continuity.experimentation.action.Abort;
+import org.continuity.experimentation.action.Clock;
 import org.continuity.experimentation.action.ContextChange;
 import org.continuity.experimentation.action.DataInvalidation;
 import org.continuity.experimentation.action.Delay;
@@ -22,8 +23,6 @@ import org.continuity.experimentation.action.continuity.WaitForJmeterReport;
 import org.continuity.experimentation.action.continuity.WorkloadModelGeneration;
 import org.continuity.experimentation.action.continuity.WorkloadTransformationAndExecution;
 import org.continuity.experimentation.action.inspectit.GetInfluxResults;
-import org.continuity.experimentation.action.inspectit.StartNewRecording;
-import org.continuity.experimentation.action.inspectit.StopRecording;
 import org.continuity.experimentation.data.CountingDataHolder;
 import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.data.SimpleDataHolder;
@@ -76,7 +75,7 @@ public class Main {
 
 		IDataHolder<String> tagForNoAnnGeneration = CountingDataHolder.of(TAG_NO_ANN);
 
-		Experiment.newExperiment("ASE-18-workload").loop(25) //
+		Experiment.newExperiment("ASE-18-workload").loop(20) //
 
 				// Invalidate all data holders
 				.append(new DataInvalidation(markovChainHolder, referenceTestplanHolder, recordingStartTimeHolder, recordingStopTimeHolder, measurementDataLink, workloadLinkNoAnn, workloadLinkWithAnn,
@@ -85,7 +84,8 @@ public class Main {
 				.append(EmailReport.send()) //
 
 				// Restart CMR
-				.append(TargetSystem.restart(Application.CMR, CONTINUITY_HOST)).append(TargetSystem.waitFor(Application.CMR, CONTINUITY_HOST))
+				.append(TargetSystem.restart(Application.CMR, CONTINUITY_HOST)).append(TargetSystem.waitFor(Application.CMR, CONTINUITY_HOST, "8182"))
+				.append(new Delay(60000))
 
 				// Flush JMeter reports
 				.append(new FlushJMeterReports(CONTINUITY_HOST))
@@ -102,11 +102,15 @@ public class Main {
 				.append(reference.append()) //
 				.append(RandomMarkovChain.create(Paths.get("heat-clinic-allowed-transitions.csv"), THINK_TIME, markovChainHolder))
 				.append(MarkovChainIntoTestPlan.merge(StaticDataHolder.of(Paths.get("heat-clinic-reference-testplan.json")), markovChainHolder, "behavior_model", referenceTestplanHolder))
-				.append(new StartNewRecording(recordingStartTimeHolder, CONTINUITY_HOST)) //
+				.append(Clock.takeTime(recordingStartTimeHolder)) //
 				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, referenceTestplanHolder)).append(new WaitForJmeterReport(CONTINUITY_HOST, DURATION)) //
-				.append(new StopRecording(recordingStopTimeHolder, CONTINUITY_HOST)) //
+				.append(Clock.takeTime(recordingStopTimeHolder)) //
 				.append(new GetInfluxResults(CONTINUITY_HOST, "8086", recordingStartTimeHolder, recordingStopTimeHolder)) //
 				.append(reference.remove()) //
+
+				// Restart the heat clinic
+				.append(restartForGeneratedNoAnn.append()) //
+				.append(TargetSystem.restart(Application.HEAT_CLINIC, SUT_HOST))
 
 				// Generate the workload models
 				.append(new AppendTimeRangeRequestParameter(recordingStartTimeHolder, recordingStopTimeHolder, measurementDataLink))
@@ -118,9 +122,8 @@ public class Main {
 				//
 				.append(new DataInvalidation(recordingStartTimeHolder, recordingStopTimeHolder))
 
-				// Restart the heat clinic and create users
-				.append(restartForGeneratedNoAnn.append()) //
-				.append(TargetSystem.restart(Application.HEAT_CLINIC, SUT_HOST)).append(TargetSystem.waitFor(Application.HEAT_CLINIC, SUT_HOST)) //
+				// Wait for the heat clinic and create users
+				.append(TargetSystem.waitFor(Application.HEAT_CLINIC, SUT_HOST)) //
 				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, StaticDataHolder.of(new TestPlanBundle(new File("heat-clinic-register-users.json")))))
 				.append(new WaitForJmeterReport(CONTINUITY_HOST, 60)) //
 				.append(restartForGeneratedNoAnn.remove()) //
@@ -128,10 +131,10 @@ public class Main {
 
 				// Execute the generated test without annotation
 				.append(generatedNoAnn.append()) //
-				.append(new StartNewRecording(recordingStartTimeHolder, CONTINUITY_HOST))
+				.append(Clock.takeTime(recordingStartTimeHolder))
 				.append(new WorkloadTransformationAndExecution(CONTINUITY_HOST, "jmeter", StaticDataHolder.of(TAG_NO_ANN), workloadLinkNoAnn, NUM_USERS, DURATION, NUM_USERS))
 				.append(new WaitForJmeterReport(CONTINUITY_HOST, DURATION)) //
-				.append(new StopRecording(recordingStopTimeHolder, CONTINUITY_HOST)) //
+				.append(Clock.takeTime(recordingStopTimeHolder)) //
 				.append(new GetInfluxResults(CONTINUITY_HOST, "8086", recordingStartTimeHolder, recordingStopTimeHolder)) //
 				.append(generatedNoAnn.remove())
 
@@ -145,10 +148,10 @@ public class Main {
 
 				// Execute the generated test with annotation
 				.append(generatedWithAnn.append()) //
-				.append(new StartNewRecording(recordingStartTimeHolder, CONTINUITY_HOST))
+				.append(Clock.takeTime(recordingStartTimeHolder))
 				.append(new WorkloadTransformationAndExecution(CONTINUITY_HOST, "jmeter", StaticDataHolder.of(TAG), workloadLinkWithAnn, NUM_USERS, DURATION, NUM_USERS))
 				.append(new WaitForJmeterReport(CONTINUITY_HOST, DURATION)) //
-				.append(new StopRecording(recordingStopTimeHolder, CONTINUITY_HOST)) //
+				.append(Clock.takeTime(recordingStopTimeHolder)) //
 				.append(new GetInfluxResults(CONTINUITY_HOST, "8086", recordingStartTimeHolder, recordingStopTimeHolder)) //
 				.append(generatedWithAnn.remove())
 
