@@ -115,11 +115,6 @@ public class RandomMarkovChain implements IExperimentAction {
 	}
 
 	private String[] createBehaviorRow(int[] allowedTransitions, String requestName, long thinkTime) {
-		// TODO: dirty fix for the heat clinic
-		if ("logoutUsingGET".equals(requestName)) {
-			thinkTime = 0;
-		}
-
 		double[] markovRow = createMarkovRow(allowedTransitions);
 
 		String[] behaviorRow = new String[allowedTransitions.length + 1];
