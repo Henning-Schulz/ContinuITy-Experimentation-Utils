@@ -17,6 +17,8 @@ dependencies {
 	
 	compile group: 'javax.mail', name: 'mail', version: '1.4.7'
 	
+	compile group: 'org.continuityproject', name: 'continuity.annotation.dsl', version: '0.3'
+	
 	testImplementation 'junit:junit:4.12'
 }
 
