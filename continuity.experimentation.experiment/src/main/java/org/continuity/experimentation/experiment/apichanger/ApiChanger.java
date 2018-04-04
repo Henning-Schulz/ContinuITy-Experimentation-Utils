@@ -12,7 +12,10 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.continuity.annotation.dsl.ContinuityModelElement;
 import org.continuity.annotation.dsl.WeakReference;
+import org.continuity.annotation.dsl.ann.CounterInput;
+import org.continuity.annotation.dsl.ann.DirectDataInput;
 import org.continuity.annotation.dsl.ann.ExtractedInput;
+import org.continuity.annotation.dsl.ann.Input;
 import org.continuity.annotation.dsl.ann.InterfaceAnnotation;
 import org.continuity.annotation.dsl.ann.ParameterAnnotation;
 import org.continuity.annotation.dsl.ann.RegExExtraction;
@@ -54,8 +57,10 @@ public class ApiChanger {
 		SystemModel system = systemSerializer.readFromYaml(BASE_PATH.resolve("v2").resolve(systemModelFilename));
 		SystemAnnotation annotation = annotationSerializer.readFromYaml(BASE_PATH.resolve("v2").resolve(annotationFilename));
 
-		ApiChanger changer = new ApiChanger(system, annotation, ".*csrfToken.*", "doLoginUsingPOST_password_REQ_PARAM", "doLoginUsingPOST_remember_me_REQ_PARAM",
-				"doLoginUsingPOST_username_REQ_PARAM", ".*itemAttribute.*");
+		ApiChanger changer = new ApiChanger(system, annotation, new MarkovTemplateChanger(BASE_PATH.resolve("v2").resolve("allowed-transitions.csv")), ".*csrfToken.*",
+				"doLoginUsingPOST_password_REQ_PARAM",
+				"doLoginUsingPOST_remember_me_REQ_PARAM",
+				"doLoginUsingPOST_username_REQ_PARAM", ".*itemAttribute.*", "Input_extracted_.*");
 
 		changer.addChanges();
 	}
@@ -70,9 +75,14 @@ public class ApiChanger {
 
 	private final List<String> excludedPatterns;
 
-	public ApiChanger(SystemModel system, SystemAnnotation annotation, String... excludedPatterns) {
+	private final ContinuityYamlSerializer<ContinuityModelElement> yamlWriter = new ContinuityYamlSerializer<>(ContinuityModelElement.class);
+
+	private final MarkovTemplateChanger templateChanger;
+
+	public ApiChanger(SystemModel system, SystemAnnotation annotation, MarkovTemplateChanger testplanChanger, String... excludedPatterns) {
 		this.system = system;
 		this.annotation = annotation;
+		this.templateChanger = testplanChanger;
 		this.excludedPatterns = Arrays.asList(excludedPatterns);
 	}
 
@@ -95,10 +105,10 @@ public class ApiChanger {
 		LOGGER.info("### v2 -> v3:");
 		for (ApiChangeType changeType : sequence) {
 			if (innerIdx == changeNumSequence.get(changeIdx)) {
-				collectChanges(2 + changeIdx);
-
 				changeIdx++;
 				innerIdx = 0;
+
+				collectChanges(2 + changeIdx);
 
 				LOGGER.info("### v{} -> v{}:", 2 + changeIdx, 3 + changeIdx);
 			}
@@ -107,6 +117,8 @@ public class ApiChanger {
 
 			innerIdx++;
 		}
+
+		collectChanges(2 + NUM_ITERATIONS);
 	}
 
 	private List<ApiChangeType> generateChangeSequence(int length) {
@@ -134,6 +146,8 @@ public class ApiChanger {
 			}
 
 			addToExtractedInputs(newInterf, origInterf);
+
+			templateChanger.copyInterface(origInterf, newInterf);
 
 			LOGGER.info("Cloned interface {} to {}.", origInterf.getId(), newInterf.getId());
 			break;
@@ -183,6 +197,9 @@ public class ApiChanger {
 				annotation.getInterfaceAnnotations().remove(origInterfAnn);
 
 				removeFromExtractedInputs(toRemove);
+				origInterfAnn.getParameterAnnotations().stream().map(ParameterAnnotation::getInput).forEach(this::removeInputIfUnused);
+
+				templateChanger.removeInterface(toRemove);
 
 				LOGGER.info("Removed interface {}.", toRemove.getId());
 			}
@@ -195,6 +212,7 @@ public class ApiChanger {
 			origInterfAnn = findAnnotation(paramToRemove.getLeft());
 			origParamAnn = findAnnotation(paramToRemove.getRight(), origInterfAnn);
 			origInterfAnn.getParameterAnnotations().remove(origParamAnn);
+			removeInputIfUnused(origParamAnn.getInput());
 
 			LOGGER.info("Removed parameter {}.", paramToRemove.getRight().getId());
 			break;
@@ -205,7 +223,21 @@ public class ApiChanger {
 	}
 
 	private void collectChanges(int version) {
-		// TODO
+		Path versionDir = BASE_PATH.resolve("v" + version);
+		versionDir.toFile().mkdirs();
+
+		try {
+			yamlWriter.writeToYaml(system, versionDir.resolve(systemModelFilename));
+			yamlWriter.writeToYaml(annotation, versionDir.resolve(annotationFilename));
+		} catch (IOException e) {
+			LOGGER.error("Exception during writing the system and annotation!", e);
+		}
+
+		try {
+			templateChanger.getTemplate().writeToFile(versionDir.resolve("allowed-transitions.csv"));
+		} catch (IOException e) {
+			LOGGER.error("Exception during writing the Markov template!", e);
+		}
 	}
 
 	private <T> T selectRandom(List<T> list) {
@@ -295,8 +327,20 @@ public class ApiChanger {
 	private ParameterAnnotation cloneParameterAnnotation(ParameterAnnotation origAnn, HttpParameter newParam) {
 		ParameterAnnotation newAnn = new ParameterAnnotation();
 		newAnn.setAnnotatedParameter(WeakReference.create(newParam));
-		newAnn.setInput(origAnn.getInput());
 		newAnn.setOverrides(new ArrayList<>(origAnn.getOverrides()));
+
+		Input origInput = origAnn.getInput();
+		Input newInput;
+
+		if (isIncluded(origInput)) {
+			newInput = cloneInput(origInput);
+			annotation.addInput(newInput);
+		} else {
+			newInput = origInput;
+		}
+
+		newAnn.setInput(newInput);
+
 		return newAnn;
 	}
 
@@ -329,6 +373,58 @@ public class ApiChanger {
 			for (RegExExtraction extractionToRemove : pair.getRight()) {
 				pair.getLeft().getExtractions().remove(extractionToRemove);
 			}
+		}
+	}
+
+	private Input cloneInput(Input origInput) {
+		Input newInput;
+
+		if (origInput instanceof DirectDataInput) {
+			newInput = new DirectDataInput();
+			((DirectDataInput) newInput).setData(((DirectDataInput) origInput).getData());
+		} else if (origInput instanceof CounterInput) {
+			CounterInput origCounter = (CounterInput) origInput;
+			CounterInput newCounter = new CounterInput();
+			newInput = newCounter;
+
+			newCounter.setFormat(origCounter.getFormat());
+			newCounter.setIncrement(origCounter.getIncrement());
+			newCounter.setMaximum(origCounter.getMaximum());
+			newCounter.setScope(origCounter.getScope());
+			newCounter.setStart(origCounter.getStart());
+		} else if (origInput instanceof ExtractedInput) {
+			ExtractedInput origExtr = (ExtractedInput) origInput;
+			ExtractedInput newExtr = new ExtractedInput();
+			newInput = newExtr;
+
+			newExtr.setInitialValue(origExtr.getInitialValue());
+
+			for (RegExExtraction regex : origExtr.getExtractions()) {
+				RegExExtraction newRegex = new RegExExtraction();
+				newRegex.setFallbackValue(regex.getFallbackValue());
+				newRegex.setFrom(WeakReference.create(regex.getFrom().getType(), regex.getFrom().getId()));
+				newRegex.setMatchNumber(regex.getMatchNumber());
+				newRegex.setPattern(regex.getPattern());
+				newRegex.setResponseKey(regex.getResponseKey());
+				newRegex.setTemplate(regex.getTemplate());
+
+				newExtr.getExtractions().add(newRegex);
+			}
+		} else {
+			LOGGER.warn("Cannot handle input {} of type {}!", origInput.getId(), origInput.getClass().getSimpleName());
+			newInput = null;
+		}
+
+		newInput.setId(origInput.getId() + "_CLONE");
+		return newInput;
+	}
+
+	private void removeInputIfUnused(Input input) {
+		boolean notUsed = annotation.getInterfaceAnnotations().stream().map(InterfaceAnnotation::getParameterAnnotations).flatMap(List::stream)
+				.filter(ann -> ann.getInput().getId().equals(input.getId())).collect(Collectors.toList()).isEmpty();
+
+		if (notUsed) {
+			annotation.getInputs().remove(input);
 		}
 	}
 
