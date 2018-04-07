@@ -5,7 +5,8 @@ import java.util.Map;
 
 public enum KnownApplication {
 
-	DVD_STORE("dvdstore", "sudo service dvdstore restart"), HEAT_CLINIC("heat-clinic", "restartHeatClinic.sh"), CMR("cmr", "sudo service cmr restart");
+	DVD_STORE("dvdstore", "sudo service dvdstore restart", "UNDEFINED"), HEAT_CLINIC("heat-clinic", "restartHeatClinic.sh", "checkoutGitVersion.sh"), CMR("cmr", "sudo service cmr restart",
+			"UNDEFINED");
 
 	private static final Map<String, KnownApplication> APP_PER_KEY = new HashMap<>();
 
@@ -21,14 +22,20 @@ public enum KnownApplication {
 
 	private final String key;
 	private final String restartCommand;
+	private final String gitCheckoutCommand;
 
-	private KnownApplication(String key, String restartCommand) {
+	private KnownApplication(String key, String restartCommand, String gitCheckoutCommand) {
 		this.key = key;
 		this.restartCommand = restartCommand;
+		this.gitCheckoutCommand = gitCheckoutCommand;
 	}
 
 	public String getRestartCommand() {
 		return restartCommand;
+	}
+
+	public String getGitCheckoutCommand() {
+		return gitCheckoutCommand;
 	}
 
 }

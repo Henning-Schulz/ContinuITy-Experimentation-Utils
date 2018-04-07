@@ -5,8 +5,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -25,6 +27,7 @@ import org.continuity.annotation.dsl.system.HttpParameter;
 import org.continuity.annotation.dsl.system.HttpParameterType;
 import org.continuity.annotation.dsl.system.ServiceInterface;
 import org.continuity.annotation.dsl.system.SystemModel;
+import org.continuity.annotation.dsl.visitor.ContinuityModelVisitor;
 import org.continuity.annotation.dsl.yaml.ContinuityYamlSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,6 +159,7 @@ public class ApiChanger {
 					.flatMap(i -> i.getParameters().stream().filter(this::isIncluded).map(p -> Pair.of((HttpInterface) i, (HttpParameter) p))).collect(Collectors.toList());
 			Pair<HttpInterface, HttpParameter> origParam = selectRandom(params);
 			HttpParameter newParam = cloneParameter(origParam.getRight());
+			newParam.setName(newParam.getName() + "Clone");
 
 			addedParameters.add(origParam);
 			origParam.getLeft().addParameter(newParam);
@@ -169,7 +173,7 @@ public class ApiChanger {
 		case CHANGE_INTERFACE_PATH:
 			HttpInterface interf = (HttpInterface) selectRandom(system.getInterfaces());
 
-			String newPath = interf.getPath() + "/changed";
+			String newPath = createNewPath(interf.getPath() + "/changed");
 			interf.setPath(newPath);
 
 			LOGGER.info("Changed path of {} to {}.", interf.getId(), newPath);
@@ -250,15 +254,15 @@ public class ApiChanger {
 		newInterf.setDomain(origInterf.getDomain());
 		newInterf.setEncoding(origInterf.getEncoding());
 		newInterf.setHeaders(new ArrayList<>(origInterf.getHeaders()));
-		newInterf.setId(origInterf.getId() + "_CLONE");
+		newInterf.setId(createNewId(origInterf.getId() + "_CLONE"));
 		newInterf.setMethod(origInterf.getMethod());
-		newInterf.setPath(origInterf.getPath() + "/clone");
+		newInterf.setPath(createNewPath(origInterf.getPath() + "/clone"));
 		newInterf.setPort(origInterf.getPort());
 		newInterf.setProtocol(origInterf.getProtocol());
 
 		for (HttpParameter param : origInterf.getParameters()) {
 			HttpParameter newParam = cloneParameter(param);
-			newParam.setId(newInterf.getId() + "_" + param.getId());
+			newParam.setId(createNewId(newInterf.getId() + "_" + param.getId()));
 			newInterf.getParameters().add(newParam);
 		}
 
@@ -267,7 +271,7 @@ public class ApiChanger {
 
 	private HttpParameter cloneParameter(HttpParameter param) {
 		HttpParameter newParam = new HttpParameter();
-		newParam.setId(param.getId() + "_CLONE");
+		newParam.setId(createNewId(param.getId() + "_CLONE"));
 		newParam.setName(param.getName());
 		newParam.setParameterType(param.getParameterType());
 		return newParam;
@@ -415,7 +419,7 @@ public class ApiChanger {
 			newInput = null;
 		}
 
-		newInput.setId(origInput.getId() + "_CLONE");
+		newInput.setId(createNewId(origInput.getId() + "_CLONE"));
 		return newInput;
 	}
 
@@ -426,6 +430,51 @@ public class ApiChanger {
 		if (notUsed) {
 			annotation.getInputs().remove(input);
 		}
+	}
+
+	private String createNewId(String initialId) {
+		Set<String> usedIds = getUsedIds();
+		String currentId = initialId;
+		int currentIdx = 1;
+
+		while (usedIds.contains(currentId)) {
+			currentIdx++;
+			currentId = initialId + "_" + currentIdx;
+		}
+
+		return currentId;
+	}
+
+	private Set<String> getUsedIds() {
+		final Set<String> usedIds = new HashSet<>();
+		ContinuityModelVisitor visitor = new ContinuityModelVisitor(elem -> {
+			if (elem.getId() != null) {
+				usedIds.add(elem.getId());
+			}
+			return true;
+		});
+
+		visitor.visit(system);
+		visitor.visit(annotation);
+
+		return usedIds;
+	}
+
+	private String createNewPath(String initialPath) {
+		Set<String> usedPaths = getUsedPaths();
+		String currentPath = initialPath;
+		int currentIdx = 1;
+
+		while (usedPaths.contains(currentPath)) {
+			currentIdx++;
+			currentPath = initialPath + currentIdx;
+		}
+
+		return currentPath;
+	}
+
+	private Set<String> getUsedPaths() {
+		return system.getInterfaces().stream().map(interf -> (HttpInterface) interf).map(HttpInterface::getPath).collect(Collectors.toSet());
 	}
 
 }

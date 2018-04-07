@@ -2,6 +2,7 @@ package org.continuity.experimentation.action;
 
 import org.continuity.experimentation.Context;
 import org.continuity.experimentation.IExperimentAction;
+import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.exception.AbortException;
 import org.continuity.experimentation.exception.AbortInnerException;
 import org.slf4j.Logger;
@@ -92,6 +93,14 @@ public class TargetSystem {
 	 */
 	public static IExperimentAction waitFor(Application app, String host) {
 		return new WaitFor(app, host);
+	}
+
+	public static IExperimentAction checkoutGitVersion(Application app, IDataHolder<String> version, String host, String port) {
+		return new GitCheckout(app, version, host, port);
+	}
+
+	public static IExperimentAction checkoutGitVersion(Application app, IDataHolder<String> version, String host) {
+		return new GitCheckout(app, version, host);
 	}
 
 	private static class Restart extends AbstractRestAction {
@@ -188,6 +197,35 @@ public class TargetSystem {
 		@Override
 		public String toString() {
 			return "Wait for the " + app + " at " + super.toString() + app.getRootPath() + " to be online.";
+		}
+
+	}
+
+	private static class GitCheckout extends AbstractRestAction {
+
+		private static final Logger LOGGER = LoggerFactory.getLogger(GitCheckout.class);
+
+		private final Application app;
+
+		private final IDataHolder<String> version;
+
+		private GitCheckout(Application app, IDataHolder<String> version, String host, String port) {
+			super(host, port);
+			this.app = app;
+			this.version = version;
+		}
+
+		private GitCheckout(Application app, IDataHolder<String> version, String host) {
+			this(app, version, host, "8080");
+		}
+
+		@Override
+		public void execute(Context context) throws AbortInnerException, AbortException, Exception {
+			LOGGER.info("Checking version {} of application {} out...", version, app);
+
+			String response = get("/git/" + app + "/checkout/" + version.get(), String.class);
+
+			LOGGER.info("Checkout done. Response from satellite: {}", response);
 		}
 
 	}
