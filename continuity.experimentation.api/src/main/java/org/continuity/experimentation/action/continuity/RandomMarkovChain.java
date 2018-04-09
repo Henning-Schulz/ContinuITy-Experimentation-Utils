@@ -5,9 +5,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -26,7 +28,7 @@ import org.continuity.experimentation.exception.AbortInnerException;
  */
 public class RandomMarkovChain implements IExperimentAction {
 
-	private final Path allowedTransitionsFilePath;
+	private final IDataHolder<Path> allowedTransitionsFilePath;
 
 	private final long averageThinkTimeMs;
 
@@ -34,9 +36,9 @@ public class RandomMarkovChain implements IExperimentAction {
 
 	private final Random random = new Random();
 
-	private final DecimalFormat decimalFormat = new DecimalFormat("#.####");
+	private final DecimalFormat decimalFormat = new DecimalFormat("#.####", new DecimalFormatSymbols(Locale.ENGLISH));
 
-	private RandomMarkovChain(Path allowedTransitionsFilePath, long averageThinkTimeMs, IDataHolder<String[][]> outputDataHolder) {
+	private RandomMarkovChain(IDataHolder<Path> allowedTransitionsFilePath, long averageThinkTimeMs, IDataHolder<String[][]> outputDataHolder) {
 		this.allowedTransitionsFilePath = allowedTransitionsFilePath;
 		this.averageThinkTimeMs = averageThinkTimeMs;
 		this.outputDataHolder = outputDataHolder;
@@ -89,7 +91,7 @@ public class RandomMarkovChain implements IExperimentAction {
 	 *            The data holder that will hold the created Markov chain.
 	 * @return The action to be used for creating the Markov chain.
 	 */
-	public static RandomMarkovChain create(Path allowedTransitionsFilePath, long averageThinkTimeMs, IDataHolder<String[][]> outputDataHolder) {
+	public static RandomMarkovChain create(IDataHolder<Path> allowedTransitionsFilePath, long averageThinkTimeMs, IDataHolder<String[][]> outputDataHolder) {
 		return new RandomMarkovChain(allowedTransitionsFilePath, averageThinkTimeMs, outputDataHolder);
 	}
 
@@ -130,10 +132,10 @@ public class RandomMarkovChain implements IExperimentAction {
 		return behaviorRow;
 	}
 
-	private String[][] readMatrixTemplate() throws IOException {
+	private String[][] readMatrixTemplate() throws IOException, AbortInnerException {
 		List<String[]> matrixAsList = new ArrayList<>();
 
-		for (String line : Files.readAllLines(allowedTransitionsFilePath)) {
+		for (String line : Files.readAllLines(allowedTransitionsFilePath.get())) {
 			matrixAsList.add(line.split("\\,"));
 		}
 

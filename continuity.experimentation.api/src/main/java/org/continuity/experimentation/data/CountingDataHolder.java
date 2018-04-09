@@ -31,6 +31,11 @@ public class CountingDataHolder implements IDataHolder<String> {
 		return new CountingDataHolder(Objects.toString(prefix));
 	}
 
+	public CountingDataHolder withStartValue(int startValue) {
+		this.counter = startValue;
+		return this;
+	}
+
 	@Override
 	public void set(String data) {
 		// do nothing
@@ -38,7 +43,7 @@ public class CountingDataHolder implements IDataHolder<String> {
 
 	@Override
 	public String get() throws AbortInnerException {
-		return prefix + "-" + counter;
+		return prefix + counter;
 	}
 
 	@Override
@@ -53,7 +58,7 @@ public class CountingDataHolder implements IDataHolder<String> {
 
 	@Override
 	public String toString() {
-		return "Counting: " + prefix + "-" + counter;
+		return "Counting: " + prefix + counter;
 	}
 
 }

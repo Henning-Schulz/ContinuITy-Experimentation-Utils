@@ -11,7 +11,6 @@ import org.continuity.annotation.dsl.yaml.ContinuityYamlSerializer;
 import org.continuity.experimentation.Context;
 import org.continuity.experimentation.action.AbstractRestAction;
 import org.continuity.experimentation.data.IDataHolder;
-import org.continuity.experimentation.data.StaticDataHolder;
 import org.continuity.experimentation.exception.AbortException;
 import org.continuity.experimentation.exception.AbortInnerException;
 import org.slf4j.Logger;
@@ -46,16 +45,37 @@ public class UploadAnnotation extends AbstractRestAction {
 	}
 
 	public static Builder from(IDataHolder<Path> path, IDataHolder<String> tag) {
-		SystemAnnotation ann;
+		IDataHolder<SystemAnnotation> annHolder = new IDataHolder<SystemAnnotation>() {
 
-		try {
-			ann = SERIALIZER.readFromYaml(path.get());
-		} catch (IOException | AbortInnerException e) {
-			LOGGER.error("Could not read annotation!", e);
-			ann = null;
-		}
+			@Override
+			public void set(SystemAnnotation data) {
+			}
 
-		return new Builder(StaticDataHolder.of(ann), tag);
+			@Override
+			public SystemAnnotation get() throws AbortInnerException {
+				SystemAnnotation ann;
+
+				try {
+					ann = SERIALIZER.readFromYaml(path.get());
+				} catch (IOException | AbortInnerException e) {
+					LOGGER.error("Could not read annotation!", e);
+					ann = null;
+				}
+
+				return ann;
+			}
+
+			@Override
+			public boolean isSet() {
+				return true;
+			}
+
+			@Override
+			public void invalidate() {
+			}
+		};
+
+		return new Builder(annHolder, tag);
 	}
 
 	public static UploadAnnotation as(String host, String port, IDataHolder<SystemAnnotation> annotation, IDataHolder<String> tag, IDataHolder<String> report) {
@@ -73,6 +93,8 @@ public class UploadAnnotation extends AbstractRestAction {
 
 		Path path = context.toPath().resolve("annotation-upload-report.json");
 		Files.write(path, Arrays.asList(response.split("\\n")), StandardOpenOption.CREATE);
+
+		LOGGER.info("Uploaded annotation {}.", annotation.get().getId());
 	}
 
 	public static class Builder {

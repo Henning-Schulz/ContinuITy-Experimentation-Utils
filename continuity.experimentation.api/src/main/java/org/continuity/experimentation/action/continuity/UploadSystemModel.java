@@ -5,13 +5,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Date;
 
 import org.continuity.annotation.dsl.system.SystemModel;
 import org.continuity.annotation.dsl.yaml.ContinuityYamlSerializer;
 import org.continuity.experimentation.Context;
 import org.continuity.experimentation.action.AbstractRestAction;
 import org.continuity.experimentation.data.IDataHolder;
-import org.continuity.experimentation.data.StaticDataHolder;
 import org.continuity.experimentation.exception.AbortException;
 import org.continuity.experimentation.exception.AbortInnerException;
 import org.slf4j.Logger;
@@ -46,16 +46,37 @@ public class UploadSystemModel extends AbstractRestAction {
 	}
 
 	public static Builder from(IDataHolder<Path> path, IDataHolder<String> tag) {
-		SystemModel sys;
+		IDataHolder<SystemModel> sysHolder = new IDataHolder<SystemModel>() {
 
-		try {
-			sys = SERIALIZER.readFromYaml(path.get());
-		} catch (IOException | AbortInnerException e) {
-			LOGGER.error("Could not read annotation!", e);
-			sys = null;
-		}
+			@Override
+			public void set(SystemModel data) {
+			}
 
-		return new Builder(StaticDataHolder.of(sys), tag);
+			@Override
+			public SystemModel get() throws AbortInnerException {
+				SystemModel sys;
+
+				try {
+					sys = SERIALIZER.readFromYaml(path.get());
+				} catch (IOException | AbortInnerException e) {
+					LOGGER.error("Could not read system model!", e);
+					sys = null;
+				}
+
+				return sys;
+			}
+
+			@Override
+			public boolean isSet() {
+				return true;
+			}
+
+			@Override
+			public void invalidate() {
+			}
+		};
+
+		return new Builder(sysHolder, tag);
 	}
 
 	public static UploadSystemModel as(String host, String port, IDataHolder<SystemModel> system, IDataHolder<String> tag, IDataHolder<String> report) {
@@ -68,11 +89,15 @@ public class UploadSystemModel extends AbstractRestAction {
 
 	@Override
 	public void execute(Context context) throws AbortInnerException, AbortException, Exception {
-		String response = post("/annotation/" + tag.get() + "/system", String.class, system.get());
+		SystemModel systemModel = system.get();
+		systemModel.setTimestamp(new Date()); // TODO
+		String response = post("/annotation/" + tag.get() + "/system", String.class, systemModel);
 		report.set(response);
 
 		Path path = context.toPath().resolve("system-upload-report.json");
 		Files.write(path, Arrays.asList(response.split("\\n")), StandardOpenOption.CREATE);
+
+		LOGGER.info("Uploaded system model {}.", systemModel.getId());
 	}
 
 	public static class Builder {

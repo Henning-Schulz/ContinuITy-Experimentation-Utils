@@ -44,7 +44,7 @@ public class GitEndpoint {
 		Process p;
 
 		try {
-			String[] command = { "bash", "-c", app.getGitCheckoutCommand(), version };
+			String[] command = { app.getGitCheckoutCommand(), version };
 			LOGGER.info("Executing the command {}", Arrays.toString(command));
 
 			p = Runtime.getRuntime().exec(command);

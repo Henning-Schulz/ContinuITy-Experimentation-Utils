@@ -23,7 +23,6 @@ import org.continuity.experimentation.action.continuity.WaitForJmeterReport;
 import org.continuity.experimentation.action.continuity.WorkloadModelGeneration;
 import org.continuity.experimentation.action.continuity.WorkloadTransformationAndExecution;
 import org.continuity.experimentation.action.inspectit.GetInfluxResults;
-import org.continuity.experimentation.data.CountingDataHolder;
 import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.data.SimpleDataHolder;
 import org.continuity.experimentation.data.StaticDataHolder;
@@ -35,7 +34,7 @@ import org.continuity.experimentation.exception.AbortException;
  * @author Henning Schulz
  *
  */
-public class WorkloadChangeMain {
+public class ApiChangeMain {
 
 	private static final String SUT_HOST = "172.16.145.67";
 
@@ -51,16 +50,12 @@ public class WorkloadChangeMain {
 
 	private static final String TAG = "heat-clinic";
 
-	private static final String TAG_NO_ANN = "heat-clinic-no-ann";
-
 	public static void main(String[] args) throws AbortException {
 		// Context switches
 		ContextChange restartForReference = new ContextChange("1-restart-for-reference");
 		ContextChange reference = new ContextChange("2-reference");
-		ContextChange restartForGeneratedNoAnn = new ContextChange("3-restart-for-generated-no-ann");
-		ContextChange generatedNoAnn = new ContextChange("4-generated-no-ann");
-		ContextChange restartForGeneratedWithAnn = new ContextChange("5-restart-for-generated-with-ann");
-		ContextChange generatedWithAnn = new ContextChange("6-generated-with-ann");
+		ContextChange restartForGeneratedWithAnn = new ContextChange("3-restart-for-generated-with-ann");
+		ContextChange generatedWithAnn = new ContextChange("4-generated-with-ann");
 
 		// Data holders
 		IDataHolder<String[][]> markovChainHolder = new SimpleDataHolder<>("markov-chain", String[][].class);
@@ -70,16 +65,12 @@ public class WorkloadChangeMain {
 		IDataHolder<Date> recordingStopTimeHolder = new SimpleDataHolder<>("recording-stop", Date.class);
 
 		IDataHolder<String> measurementDataLink = new SimpleDataHolder<>("measurement-data-link", "http://" + CONTINUITY_HOST + ":8182/", true);
-		IDataHolder<String> workloadLinkNoAnn = new SimpleDataHolder<>("workload-link-no-ann", String.class);
 		IDataHolder<String> workloadLinkWithAnn = new SimpleDataHolder<>("workload-link-with-ann", String.class);
 
-		IDataHolder<String> tagForNoAnnGeneration = CountingDataHolder.of(TAG_NO_ANN);
-
-		Experiment.newExperiment("ASE-18-workload").loop(20) //
+		Experiment.newExperiment("ASE-18-api").loop(20) //
 
 				// Invalidate all data holders
-				.append(new DataInvalidation(markovChainHolder, referenceTestplanHolder, recordingStartTimeHolder, recordingStopTimeHolder, measurementDataLink, workloadLinkNoAnn, workloadLinkWithAnn,
-						tagForNoAnnGeneration))
+				.append(new DataInvalidation(markovChainHolder, referenceTestplanHolder, recordingStartTimeHolder, recordingStopTimeHolder, measurementDataLink, workloadLinkWithAnn))
 
 				.append(EmailReport.send()) //
 
@@ -109,13 +100,11 @@ public class WorkloadChangeMain {
 				.append(reference.remove()) //
 
 				// Restart the heat clinic
-				.append(restartForGeneratedNoAnn.append()) //
+				.append(restartForGeneratedWithAnn.append()) //
 				.append(TargetSystem.restart(Application.HEAT_CLINIC, SUT_HOST))
 
 				// Generate the workload models
 				.append(new AppendTimeRangeRequestParameter(recordingStartTimeHolder, recordingStopTimeHolder, measurementDataLink))
-				.append(new WorkloadModelGeneration(CONTINUITY_HOST, CONTINUITY_PORT, "wessbas", tagForNoAnnGeneration, measurementDataLink, workloadLinkNoAnn))
-				.append(Abort.innerIf(workloadLinkNoAnn::isNotSet, "The WESSBAS model without annotation was not correctly generated!"))
 				.append(new WorkloadModelGeneration(CONTINUITY_HOST, CONTINUITY_PORT, "wessbas", StaticDataHolder.of(TAG), measurementDataLink, workloadLinkWithAnn))
 				.append(Abort.innerIf(workloadLinkWithAnn::isNotSet, "The WESSBAS model with annotation was not correctly generated!"))
 
@@ -124,23 +113,6 @@ public class WorkloadChangeMain {
 
 				// Wait for the heat clinic and create users
 				.append(TargetSystem.waitFor(Application.HEAT_CLINIC, SUT_HOST)) //
-				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, StaticDataHolder.of(new TestPlanBundle(new File("heat-clinic-register-users.json")))))
-				.append(new WaitForJmeterReport(CONTINUITY_HOST, 60)) //
-				.append(restartForGeneratedNoAnn.remove()) //
-				.append(new Delay(20000)) //
-
-				// Execute the generated test without annotation
-				.append(generatedNoAnn.append()) //
-				.append(Clock.takeTime(recordingStartTimeHolder))
-				.append(new WorkloadTransformationAndExecution(CONTINUITY_HOST, "jmeter", StaticDataHolder.of(TAG_NO_ANN), workloadLinkNoAnn, NUM_USERS, DURATION, NUM_USERS))
-				.append(new WaitForJmeterReport(CONTINUITY_HOST, DURATION)) //
-				.append(Clock.takeTime(recordingStopTimeHolder)) //
-				.append(new GetInfluxResults(CONTINUITY_HOST, "8086", recordingStartTimeHolder, recordingStopTimeHolder)) //
-				.append(generatedNoAnn.remove())
-
-				// Restart the heat clinic and create users
-				.append(restartForGeneratedWithAnn.append()) //
-				.append(TargetSystem.restart(Application.HEAT_CLINIC, SUT_HOST)).append(TargetSystem.waitFor(Application.HEAT_CLINIC, SUT_HOST)) //
 				.append(new JMeterTestPlanExecution(CONTINUITY_HOST, StaticDataHolder.of(new TestPlanBundle(new File("heat-clinic-register-users.json")))))
 				.append(new WaitForJmeterReport(CONTINUITY_HOST, 60)) //
 				.append(restartForGeneratedWithAnn.remove()) //
