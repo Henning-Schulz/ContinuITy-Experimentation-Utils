@@ -2,12 +2,14 @@ package org.continuity.experimentation.action.continuity;
 
 import java.nio.file.Path;
 
+import org.continuity.api.entities.artifact.JMeterTestPlanBundle;
 import org.continuity.experimentation.Context;
 import org.continuity.experimentation.IExperimentAction;
-import org.continuity.experimentation.action.continuity.JMeterTestPlanExecution.TestPlanBundle;
 import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.exception.AbortException;
 import org.continuity.experimentation.exception.AbortInnerException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Merges a markov chain into a test plan.
@@ -23,9 +25,9 @@ public class MarkovChainIntoTestPlan implements IExperimentAction {
 
 	private final String behaviorModelKey;
 
-	private final IDataHolder<TestPlanBundle> outputHolder;
+	private final IDataHolder<JMeterTestPlanBundle> outputHolder;
 
-	private MarkovChainIntoTestPlan(IDataHolder<Path> testPlanPathHolder, IDataHolder<String[][]> markovChainHolder, String behaviorModelKey, IDataHolder<TestPlanBundle> outputHolder) {
+	private MarkovChainIntoTestPlan(IDataHolder<Path> testPlanPathHolder, IDataHolder<String[][]> markovChainHolder, String behaviorModelKey, IDataHolder<JMeterTestPlanBundle> outputHolder) {
 		this.testPlanPathHolder = testPlanPathHolder;
 		this.markovChainHolder = markovChainHolder;
 		this.behaviorModelKey = behaviorModelKey;
@@ -46,13 +48,14 @@ public class MarkovChainIntoTestPlan implements IExperimentAction {
 	 *            [out] Will hold the test plan bundle with the Markov chain.
 	 * @return An action to be executed for merging the test plan with the Markov chain.
 	 */
-	public static MarkovChainIntoTestPlan merge(IDataHolder<Path> testPlanPathHolder, IDataHolder<String[][]> markovChainHolder, String behaviorModelKey, IDataHolder<TestPlanBundle> outputHolder) {
+	public static MarkovChainIntoTestPlan merge(IDataHolder<Path> testPlanPathHolder, IDataHolder<String[][]> markovChainHolder, String behaviorModelKey, IDataHolder<JMeterTestPlanBundle> outputHolder) {
 		return new MarkovChainIntoTestPlan(testPlanPathHolder, markovChainHolder, behaviorModelKey, outputHolder);
 	}
 
 	@Override
 	public void execute(Context context) throws AbortInnerException, AbortException, Exception {
-		TestPlanBundle bundle = new TestPlanBundle(testPlanPathHolder.get().toFile());
+		ObjectMapper mapper = new ObjectMapper();
+		JMeterTestPlanBundle bundle = mapper.readValue(testPlanPathHolder.get().toFile(), JMeterTestPlanBundle.class);
 		bundle.getBehaviors().clear();
 		bundle.getBehaviors().put(behaviorModelKey, markovChainHolder.get());
 

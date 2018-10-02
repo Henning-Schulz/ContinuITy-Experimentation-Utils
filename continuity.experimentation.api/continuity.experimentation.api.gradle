@@ -9,6 +9,7 @@ dependencies {
 	
 	compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.9.3'
 	compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.9.3'
+	compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.9.3'
 	
 	compile group: 'com.rabbitmq', name: 'amqp-client', version: '5.1.1'
 	compile group: 'commons-io', name: 'commons-io', version: '2.5'
@@ -18,5 +19,7 @@ dependencies {
 	compile group: 'javax.mail', name: 'mail', version: '1.4.7'
 	
 	testImplementation 'junit:junit:4.12'
+	
+	compile group: 'com.github.continuity-project', name: 'continuity.api', version: '1.2.112'
 }
 
