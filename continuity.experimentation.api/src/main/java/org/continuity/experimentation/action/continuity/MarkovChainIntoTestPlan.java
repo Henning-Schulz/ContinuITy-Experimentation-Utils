@@ -8,6 +8,8 @@ import org.continuity.experimentation.IExperimentAction;
 import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.exception.AbortException;
 import org.continuity.experimentation.exception.AbortInnerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -18,6 +20,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  *
  */
 public class MarkovChainIntoTestPlan implements IExperimentAction {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(MarkovChainIntoTestPlan.class);
 
 	private final IDataHolder<Path> testPlanPathHolder;
 
@@ -54,12 +58,17 @@ public class MarkovChainIntoTestPlan implements IExperimentAction {
 
 	@Override
 	public void execute(Context context) throws AbortInnerException, AbortException, Exception {
+		LOGGER.info("Merging the Markov chain {} into test plan {} with key {}.", markovChainHolder, testPlanPathHolder, behaviorModelKey);
+
 		ObjectMapper mapper = new ObjectMapper();
 		JMeterTestPlanBundle bundle = mapper.readValue(testPlanPathHolder.get().toFile(), JMeterTestPlanBundle.class);
+
 		bundle.getBehaviors().clear();
-		bundle.getBehaviors().put(behaviorModelKey, markovChainHolder.get());
+		bundle.getBehaviors().put(behaviorModelKey + ".csv", markovChainHolder.get());
 
 		outputHolder.set(bundle);
+
+		LOGGER.info("Markov chain and test plan merged.");
 	}
 
 	@Override

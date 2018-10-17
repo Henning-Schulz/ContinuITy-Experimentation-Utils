@@ -5,3 +5,4 @@
 Mock for Path, hashCode: *
 *.log
 *.summary
+uploadJar.sh
