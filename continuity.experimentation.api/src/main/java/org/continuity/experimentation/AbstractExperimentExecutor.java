@@ -78,8 +78,7 @@ public abstract class AbstractExperimentExecutor {
 					abort(e);
 				} catch (Exception e) {
 					caughtExceptions.add(e);
-					LOGGER.warn("Action '{}' threw a {}. Ignoring and continuing.", current.getAction(), e);
-					LOGGER.error("Exception", e);
+					LOGGER.warn("Action '{}' threw an exception. Ignoring and continuing.", current.getAction(), e);
 				}
 			}
 

@@ -20,6 +20,10 @@ jar {
   }
 }
 
+shadowJar {
+	zip64 true
+}
+
 build.dependsOn {
 	shadowJar
 }

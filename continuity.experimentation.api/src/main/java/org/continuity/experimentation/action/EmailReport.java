@@ -119,7 +119,7 @@ public class EmailReport implements IExperimentAction {
 		if (report.isError()) {
 			messageBuilder.append("<font color=\"red\"><b><i>The experiment has been aborted!</b></i></font><br><br>");
 		} else {
-			messageBuilder.append("<font color=\"green\"><i>The experiment is still running.</i></font><br><br>");
+			messageBuilder.append("<font color=\"green\"><i>The experiment is running.</i></font><br><br>");
 		}
 
 		messageBuilder.append("<b>Current context:</b> ");
@@ -144,7 +144,7 @@ public class EmailReport implements IExperimentAction {
 		}
 
 
-		messageBuilder.append("<br><i>The report was created at ");
+		messageBuilder.append("<br><br><i>The report was created at ");
 		messageBuilder.append(new Date());
 		messageBuilder.append("</i>");
 

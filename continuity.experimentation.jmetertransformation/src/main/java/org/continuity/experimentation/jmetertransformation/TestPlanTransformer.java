@@ -37,6 +37,12 @@ public class TestPlanTransformer {
 		for (File file : new File(properties.getProperty(ARG_FOLDER, "./")).listFiles()) {
 			if (file.getName().endsWith(".jmx")) {
 				createBundle(file);
+			} else if (file.isDirectory()) {
+				for (File subfile : file.listFiles()) {
+					if (subfile.getName().endsWith(".jmx")) {
+						createBundle(subfile);
+					}
+				}
 			}
 		}
 	}

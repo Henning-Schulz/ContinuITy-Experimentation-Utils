@@ -3,10 +3,16 @@ package org.continuity.experimentation.action.continuity;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 import org.continuity.experimentation.Context;
 import org.continuity.experimentation.IExperimentAction;
@@ -22,7 +28,7 @@ import org.continuity.experimentation.exception.AbortInnerException;
  */
 public class RandomMarkovChain implements IExperimentAction {
 
-	private final Path allowedTransitionsFilePath;
+	private final IDataHolder<Path> allowedTransitionsFilePath;
 
 	private final long averageThinkTimeMs;
 
@@ -30,7 +36,9 @@ public class RandomMarkovChain implements IExperimentAction {
 
 	private final Random random = new Random();
 
-	private RandomMarkovChain(Path allowedTransitionsFilePath, long averageThinkTimeMs, IDataHolder<String[][]> outputDataHolder) {
+	private final DecimalFormat decimalFormat = new DecimalFormat("#.####", new DecimalFormatSymbols(Locale.ENGLISH));
+
+	private RandomMarkovChain(IDataHolder<Path> allowedTransitionsFilePath, long averageThinkTimeMs, IDataHolder<String[][]> outputDataHolder) {
 		this.allowedTransitionsFilePath = allowedTransitionsFilePath;
 		this.averageThinkTimeMs = averageThinkTimeMs;
 		this.outputDataHolder = outputDataHolder;
@@ -83,7 +91,7 @@ public class RandomMarkovChain implements IExperimentAction {
 	 *            The data holder that will hold the created Markov chain.
 	 * @return The action to be used for creating the Markov chain.
 	 */
-	public static RandomMarkovChain create(Path allowedTransitionsFilePath, long averageThinkTimeMs, IDataHolder<String[][]> outputDataHolder) {
+	public static RandomMarkovChain create(IDataHolder<Path> allowedTransitionsFilePath, long averageThinkTimeMs, IDataHolder<String[][]> outputDataHolder) {
 		return new RandomMarkovChain(allowedTransitionsFilePath, averageThinkTimeMs, outputDataHolder);
 	}
 
@@ -96,23 +104,38 @@ public class RandomMarkovChain implements IExperimentAction {
 
 		markovChain[0] = template[0];
 
-		for (int row = 1; row < markovChain.length; row++) {
-			double[] markovRow = createMarkovRow(allowedTransitions[row - 1]);
+		// transitions from INITIAL
+		markovChain[1] = createBehaviorRow(allowedTransitions[0], template[1][0], 0);
 
-			markovChain[row][0] = template[row][0];
-
-			for (int col = 1; col < markovChain[row].length; col++) {
-				markovChain[row][col] = formatEntry(markovRow[col - 1]);
-			}
+		for (int row = 2; row < markovChain.length; row++) {
+			markovChain[row] = createBehaviorRow(allowedTransitions[row - 1], template[row][0], averageThinkTimeMs);
 		}
 
 		outputDataHolder.set(markovChain);
+
+		saveMarkovChain(markovChain, context);
 	}
 
-	private String[][] readMatrixTemplate() throws IOException {
+	private String[] createBehaviorRow(int[] allowedTransitions, String requestName, long thinkTime) {
+		double[] markovRow = createMarkovRow(allowedTransitions);
+
+		String[] behaviorRow = new String[allowedTransitions.length + 1];
+		behaviorRow[0] = requestName;
+
+		for (int col = 1; col < (behaviorRow.length - 1); col++) {
+			behaviorRow[col] = formatEntry(markovRow[col - 1], thinkTime);
+		}
+
+		// transitions to $
+		behaviorRow[behaviorRow.length - 1] = formatEntry(markovRow[behaviorRow.length - 2], 0);
+
+		return behaviorRow;
+	}
+
+	private String[][] readMatrixTemplate() throws IOException, AbortInnerException {
 		List<String[]> matrixAsList = new ArrayList<>();
 
-		for (String line : Files.readAllLines(allowedTransitionsFilePath)) {
+		for (String line : Files.readAllLines(allowedTransitionsFilePath.get())) {
 			matrixAsList.add(line.split("\\,"));
 		}
 
@@ -147,14 +170,28 @@ public class RandomMarkovChain implements IExperimentAction {
 		return row;
 	}
 
-	private String formatEntry(double prob) {
-		return prob + "; " + createThinkTimeString(prob > 0 ? averageThinkTimeMs : 0);
+	private String formatEntry(double prob, long thinkTime) {
+		return decimalFormat.format(prob) + "; " + createThinkTimeString(prob > 0 ? thinkTime : 0);
 	}
 
 	private String createThinkTimeString(long averageThinkTimeMs) {
 		double factor = random.nextDouble() + 0.5;
 		double thinkTime = averageThinkTimeMs * factor;
-		return "norm(" + thinkTime + " " + (thinkTime / 2) + ")";
+		return "norm(" + decimalFormat.format(thinkTime) + " " + decimalFormat.format(thinkTime / 2.0) + ")";
+	}
+
+	private void saveMarkovChain(String[][] markovChain, Context context) throws IOException {
+		Path folder = context.toPath();
+		String origFile = "random-markov-chain";
+		int counter = 1;
+		String currFile = origFile + ".csv";
+
+		while (folder.resolve(currFile).toFile().exists()) {
+			currFile = origFile + "-" + ++counter + ".csv";
+		}
+
+		Files.write(folder.resolve(currFile), Arrays.stream(markovChain).map(Arrays::stream).map(s -> s.reduce((a, b) -> a + "," + b)).map(Optional::get).collect(Collectors.toList()),
+				StandardOpenOption.CREATE);
 	}
 
 	@Override

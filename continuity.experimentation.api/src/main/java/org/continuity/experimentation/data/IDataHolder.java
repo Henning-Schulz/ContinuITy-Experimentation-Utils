@@ -34,6 +34,15 @@ public interface IDataHolder<T> {
 	boolean isSet();
 
 	/**
+	 * Returns whether the data has not been set yet.
+	 *
+	 * @return {@code false} if the data has been set or {@code true} otherwise.
+	 */
+	default boolean isNotSet() {
+		return !isSet();
+	}
+
+	/**
 	 * Invalidates the stored data.
 	 */
 	void invalidate();
