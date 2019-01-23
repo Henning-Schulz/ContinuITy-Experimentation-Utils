@@ -232,7 +232,7 @@ public class TargetSystem {
 
 	public static enum Application {
 
-		DVD_STORE("dvdstore", "/dvdstore/home"), HEAT_CLINIC("heat-clinic", "/"), CMR("cmr", "/rest/data/agents");
+		DVD_STORE("dvdstore", "/dvdstore/home"), HEAT_CLINIC("heat-clinic", "/"), SOCK_SHOP("sock-shop", "/"), CMR("cmr", "/rest/data/agents"), CMR_DOCKER_SWARM("cmr", "/");
 
 		private final String name;
 

@@ -9,8 +9,10 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
+import org.continuity.api.entities.report.OrderReport;
 import org.continuity.experimentation.Context;
 import org.continuity.experimentation.action.AbstractRestAction;
+import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.exception.AbortException;
 import org.continuity.experimentation.exception.AbortInnerException;
 import org.slf4j.Logger;
@@ -68,15 +70,17 @@ public class PrometheusDataExporter extends AbstractRestAction {
 	 * @param timeframe
 	 *            the time frame
 	 */
-	public PrometheusDataExporter(List<String> metrics, String host, String port, List<String> services, long timeframe) {
+	public PrometheusDataExporter(List<String> metrics, String host, String port, String orchestratorHost, String orchestratorPort, List<String> services, long timeframe,
+			IDataHolder<OrderReport> orderReport) {
 		super(host, port);
 		this.metrics = metrics;
 		this.services = services;
-		this.timeframe = timeframe;
+		this.timeframe = timeframe+20;
 	}
 
 	@Override
 	public void execute(Context context) throws AbortInnerException, AbortException, Exception {
+		//getLoadTestTimeStamps();
 		RestTemplate restTemplate = new RestTemplate();
 		StringBuffer url = new StringBuffer("http://");
 		url.append(getHost());
@@ -84,7 +88,6 @@ public class PrometheusDataExporter extends AbstractRestAction {
 		url.append(getPort());
 		url.append(URI);
 		url.append(buildQuery());
-
 		URI uri = UriComponentsBuilder.fromUriString(url.toString()).build().encode().toUri();
 		LOGGER.info("Retrieve prometheus results with url: {}", uri);
 		ResponseEntity<ObjectNode> response = restTemplate.exchange(uri, HttpMethod.GET, null, ObjectNode.class);
@@ -117,8 +120,7 @@ public class PrometheusDataExporter extends AbstractRestAction {
 			// Delete last \n
 			csvInput.delete(csvInput.length() - 1, csvInput.length() - 1);
 			if (result.get("metric").has("route")) {
-				csvInputs.put(basePath.resolve(result.get("metric").get("job").textValue() + "_" + result.get("metric").get("__name__").textValue() + "_"
-						+ result.get("metric").get("route").textValue().replaceAll("/", "#") + FILE_EXT), csvInput.toString());
+				csvInputs.put(basePath.resolve(result.get("metric").get("job").textValue() + "_" + result.get("metric").get("__name__").textValue() + "_" + result.get("metric").get("route").textValue().replaceAll("/", "#") + "_"+result.get("metric").get("status_code")+ FILE_EXT), csvInput.toString());
 			} else {
 				csvInputs.put(basePath.resolve(result.get("metric").get("job").textValue() + "_" + result.get("metric").get("__name__").textValue() + FILE_EXT), csvInput.toString());
 			}
@@ -153,7 +155,7 @@ public class PrometheusDataExporter extends AbstractRestAction {
 		}
 		query.append("\"}[");
 		query.append(timeframe);
-		query.append("s]");
+		query.append("m]");
 		return query.toString();
 	}
 }

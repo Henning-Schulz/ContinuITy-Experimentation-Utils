@@ -1,0 +1,6 @@
+session-logs,orders,shipping,payment
+workload-model,orders,shipping,payment,user
+session-logs,shipping
+workload-model,shipping
+session-logs,catalogue
+workload-model,catalogue

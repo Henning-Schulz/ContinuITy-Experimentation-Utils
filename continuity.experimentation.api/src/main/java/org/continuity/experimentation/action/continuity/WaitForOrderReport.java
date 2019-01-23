@@ -57,7 +57,7 @@ public class WaitForOrderReport extends AbstractRestAction {
 	 * @param host
 	 *            host of the ContinuITy orchestrator
 	 * @param port
-	 *            port of the ContinuITy orchestrator
+	 *            port of the ContinuITy orchestrator 
 	 * @param orderResponse
 	 *            order response
 	 * @param orderReport
@@ -79,7 +79,13 @@ public class WaitForOrderReport extends AbstractRestAction {
 		if (orderResponse.isSet() && orderResponse.get().getWaitLink() != null) {
 			URL url = new URL(orderResponse.get().getWaitLink());
 			LOGGER.info("Wait for order to be finished");
-			orderReport.set(get(url.toURI().getPath() + "?timeout=" + timeout, OrderReport.class));
+			OrderReport receivedOrderReport = null;
+			while(null == receivedOrderReport) {
+				LOGGER.info("Waiting for {} millis", timeout);
+				receivedOrderReport = get(url.toURI().getPath() + "?timeout=" + timeout, OrderReport.class);
+			}
+			
+			orderReport.set(receivedOrderReport);
 			Path basePath = context.toPath();
 			ObjectWriter writer = mapper.writer(new DefaultPrettyPrinter());
 			writer.writeValue(basePath.resolve(FILENAME + FILE_EXT).toFile(), orderReport.get());
