@@ -1,0 +1,411 @@
+# Note that the !<direct> etc. tags were replaced by "@type": direct.
+# This is because JSON schemata do not support YAML tags properly.
+overrides:
+- HttpEndpoint.domain: 172.17.0.1
+- HttpEndpoint.port: 80
+inputs:
+- !<direct>
+  &Input_itemId data:
+  - "03fef6ac-1896-4ce8-bd69-b798f85c6e0b"
+  - "3395a43e-2d88-40de-b95f-e00e1502085b"
+  - "510a0d7e-8e83-4193-b483-e27e09ddc34d"
+  - "808a2de1-1aaa-4c25-a9b9-6612e8f29a38"
+  - "819e1fbf-8b7e-4f6d-811f-693534916a8b"
+  - "837ab141-399e-4c1f-9abc-bace40296bac"
+  - "a0a4f044-b040-410d-8ead-4de0446aec7e"
+  - "d3588630-ad8e-49df-bbd7-3167f7efb246"
+  - "zzz4f044-b040-410d-8ead-4de0446aec7e"
+
+- !<extracted>
+  &Input_extracted_lastItemId extractions:
+  - from: cartUsingGET
+    pattern: 'itemId": "([a-z0-9-]+)'
+    match-number: 1
+
+- !<direct>
+  &Input_updateCartUsingPOST_quantity data:
+  - "1"
+  - "2"
+  - "3"
+  - "4"
+  - "5"
+  - "6"
+  - "7"
+  - "8"
+  - "9"
+  - "10"
+
+- !<json>
+  &Input_addItemToCartUsingPOST_BODY type : object
+  items:
+  - !<json>
+    name : id
+    type : string
+    input: *Input_itemId 
+
+- !<json>
+  &Input_updateCartUsingPost_BODY type: object
+  items:
+  - !<json>
+    name : id 
+    type: string
+    input: *Input_extracted_lastItemId 
+  - !<json>
+    name: quantity
+    type: string
+    input: *Input_updateCartUsingPOST_quantity 
+
+- !<direct>
+  &Input_getCatalogueImagesUsingGET_filename_URL_PART data:
+  - "holy_1.jpeg"
+  - "holy_2.jpeg"
+  - "colourful_socks.jpg"
+  - "colourful_socks.jpg"
+  - "puma_1.jpeg"
+  - "puma_2.jpeg"
+  - "cross_1.jpeg"
+  - "cross_2.jpeg"
+  - "WAT.jpg"
+  - "WAT2.jpg"
+  - "catsocks.jpg"
+  - "catsocks2.jpg"
+  - "bit_of_leg_1.jpeg"
+  - "bit_of_leg_2.jpeg"
+  - "youtube_1.jpeg"
+  - "youtube_2.jpeg"
+  - "classic.jpg"
+  - "classic2.jpg"
+
+- !<direct>
+  &Input_tags data:
+  - "brown"
+  - "geek"
+  - "formal"
+  - "blue"
+  - "skin"
+  - "red"
+  - "action"
+  - "sport"
+  - "black"
+  - "magic"
+  - "green"
+
+- !<extracted>
+  &Input_getCatalogueUsingGET_size_REQ_PARAM extractions:
+  - from: getCatalogueSizeUsingGET
+    pattern: '"size":([0-9]+),'
+    match-number: 1
+  initial: 5
+
+- !<extracted>
+  &Input_extracted_lastOrder extractions:
+  - from: getOrdersUsingGET
+    pattern: 'orders/([a-z0-9]+)"'
+    match-number: 1
+
+- !<direct>
+  &Input_currentCustomerId data:
+  - "thisIdWillBeIgnoredBytheFrontEnd"
+
+- !<direct>
+  &Input_loginUsingGET_base64String_HEADER data:
+  - "Basic dXNlcjpwYXNzd29yZA=="
+
+- !<direct>
+  &Input_createAddressesUsingPOST_number_BODY_PART data:
+  - "1"
+  - "2"
+  - "3"
+  - "4"
+
+- !<direct>
+  &Input_createAddressesUsingPOST_street_BODY_PART data:
+  - Udamstr.
+  - Uferstr.
+  - Uhlbacher Platz
+  - Uhlbacher Str.
+  - Uhlbergstr.
+  - Uhuweg
+  - Ukrainestr.
+  - Ulmenstr.
+  - Ulmer Str.
+  - Ulrichstr.
+  - Umgelterweg
+  - Ungsteiner Str.
+  - Universitaetsstr.
+  - Unkenweg
+  - Unter dem Birkenkopf
+  - Unter den Birken
+  - Unteraicher Str.
+  - Untere Brandstr.
+  - Untere Hagstr.
+  - Untere Heckenstr.
+  - Untere Querstr.
+  - Untere Schiessaeckerstr.
+  - Untere Str.
+  - Untere Waldplaetze
+  - Unterer Bruehl
+  - Unterer Dornbusch
+  - Unterer Grund
+  - Unterer Hurtweg
+  - Unterhaeuser Str.
+  - Unterlaender Str.
+  - Untertuerkheimer Kelterplatz
+  - Urachplatz
+  - Urachstr.
+  - Uranusweg
+  - Urbacher Str.
+  - Urbansplatz
+  - Urbanstr.
+  - Ursulastr.
+  - Usedomstr.
+
+- !<direct>
+  &Input_createAddressesUsingPOST_city_BODY_PART data:
+  - Busan
+  - Shanghai
+  - Kinshasa
+  - Kolkata
+  - Shenzhen
+  - Durban
+  - Hanoi
+  - Mexico City
+  - Tehran
+  - Ho Chi Minh City
+  - Suzhou
+  - Madrid
+  - Seoul
+  - Mumbai
+  - Sao Paulo
+  - Chennai
+  - Johannesburg
+  - Singapore
+  - Tokyo
+  - Delhi
+
+- !<direct>
+  &Input_createAddressesUsingPOST_country_BODY_PART data:
+  - KR
+  - CN
+  - CD
+  - IN
+  - CN
+  - ZA
+  - VN
+  - MX
+  - IR
+  - VN
+  - CN
+  - ES
+  - KR
+  - IN
+  - BR
+  - IN
+  - ZA
+  - SG
+  - JP
+  - IN
+ 
+- !<direct>
+  &Input_createAddressesUsingPOST_postcode_BODY_PART data:
+  - 0000
+  - 0011
+  - 2887
+  - 5378
+  - 2345
+  - 3343
+  - 6454
+  - 3454
+  - 7676
+  - 2323
+  - 4545
+- !<json>
+  &Input_createAddressesUsingPOST_body_BODY type: object
+  items:
+  - !<json>
+    name : number
+    type: string
+    input: *Input_createAddressesUsingPOST_number_BODY_PART
+  - !<json>
+    name: street 
+    type: string
+    input: *Input_createAddressesUsingPOST_street_BODY_PART
+  - !<json>
+    name: city 
+    type: string
+    input: *Input_createAddressesUsingPOST_city_BODY_PART
+  - !<json>
+    name: postcode 
+    type: string
+    input: *Input_createAddressesUsingPOST_postcode_BODY_PART
+  - !<json>
+    name: country 
+    type: string
+    input: *Input_createAddressesUsingPOST_country_BODY_PART
+
+- !<direct>
+  &Input_createCardUsingPOST_longNum_BODY_PART data:
+  - 258274587245765387
+  - 349749658734659873
+  - 763874659876983476
+  - 369538746598736593
+  - 876539874659876998
+  - 356987693847659878
+  - 734753876938476593
+  - 178765348765367777
+  - 230998953834565878
+  - 345675876587634876
+  - 987698347627398736
+
+- !<direct>
+  &Input_createCardUsingPOST_expires_BODY_PART data:
+  - "08/22"
+
+- !<direct>
+  &Input_createCardUsingPOST_ccv_BODY_PART data:
+  - 2424
+  - 2525
+  - 1414
+  - 7373
+  - 2425
+  - 2626
+  - 1616
+  - 3434
+  - 4646
+  - 6464
+  - 4343
+
+- !<json>
+  &Input_createCardUsingPOST_body_BODY type: object
+  items:
+  - !<json>
+    name: longNum 
+    type: string
+    input: *Input_createCardUsingPOST_longNum_BODY_PART
+  - !<json>
+    name: expires 
+    type: string
+    input: *Input_createCardUsingPOST_expires_BODY_PART
+  - !<json>
+    name: ccv 
+    type: string
+    input: *Input_createCardUsingPOST_ccv_BODY_PART
+
+
+endpoint-annotations:
+
+- endpoint: cartUsingGET
+  overrides: []
+  parameter-annotations: []
+
+- endpoint: cartUsingDELETE
+  overrides: []
+  parameter-annotations: []
+
+- endpoint: deleteCartItemUsingDELETE
+  overrides: []
+  parameter-annotations:
+  - parameter: deleteCartItemUsingDELETE_id_URL_PART
+    input: *Input_extracted_lastItemId
+
+- endpoint: addItemToCartUsingPOST
+  overrides: []
+  parameter-annotations:
+  - parameter: addItemToCartUsingPOST_body_BODY
+    input: *Input_addItemToCartUsingPOST_BODY
+
+- endpoint: updateCartUsingPOST
+  overrides: []
+  parameter-annotations:
+  - parameter: updateCartUsingPOST_body_BODY
+    input: *Input_updateCartUsingPost_BODY
+
+- endpoint: getCatalogueImagesUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: getCatalogueImagesUsingGET_filename_URL_PART
+    input: *Input_getCatalogueImagesUsingGET_filename_URL_PART
+
+- endpoint: getCatalogueUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: getCatalogueUsingGET_size_REQ_PARAM
+    input: *Input_getCatalogueUsingGET_size_REQ_PARAM
+  - parameter: getCatalogueUsingGET_tags_REQ_PARAM
+    input: *Input_tags
+
+- endpoint: getCatalogueItemUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: getCatalogueItemUsingGET_id_URL_PART
+    input: *Input_itemId
+
+- endpoint: getCatalogueTagsUsingGET
+  overrides: []
+  parameter-annotations: []
+
+- endpoint: getCatalogueSizeUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: getCatalogueSizeUsingGET_tags_REQ_PARAM
+    input: *Input_tags
+
+- endpoint: getOrdersUsingGET
+  overrides: []
+  parameter-annotations: []
+
+- endpoint: getOrderUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: getOrderUsingGET_id_URL_PART
+    input: *Input_extracted_lastOrder
+
+- endpoint: submitOrderUsingPOST
+  overrides: []
+  parameter-annotations: []
+
+- endpoint: getCustomerUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: getCustomerUsingGET_id_URL_PART
+    input: *Input_currentCustomerId
+
+- endpoint: getCustomersUsingGET
+  overrides: []
+  parameter-annotations: []
+
+- endpoint: getAddressesUsingGET
+  overrides: []
+  parameter-annotations: []
+
+- endpoint: getCardsUsingGET
+  overrides: []
+  parameter-annotations: []
+
+- endpoint: createAddressesUsingPOST
+  overrides: []
+  parameter-annotations:
+  - parameter: createAddressesUsingPOST_body_BODY
+    input: *Input_createAddressesUsingPOST_body_BODY
+  
+
+- endpoint: getCardOfCurrentCustomerUsingGET
+  overrides: []
+  parameter-annotations: []
+
+- endpoint: getAddressOfCurrentCustomerUsingGET
+  overrides: []
+  parameter-annotations: []
+
+- endpoint: createCardUsingPOST
+  overrides: []
+  parameter-annotations:
+  - parameter: createCardUsingPOST_body_BODY
+    input: *Input_createCardUsingPOST_body_BODY
+
+- endpoint: loginUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: loginUsingGET_base64authentification_HEADER
+    input: *Input_loginUsingGET_base64String_HEADER
+

@@ -9,10 +9,8 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
-import org.continuity.api.entities.report.OrderReport;
 import org.continuity.experimentation.Context;
 import org.continuity.experimentation.action.AbstractRestAction;
-import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.exception.AbortException;
 import org.continuity.experimentation.exception.AbortInnerException;
 import org.slf4j.Logger;
@@ -27,7 +25,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * Exports values of a certain metric and a different services as separate files
- * 
+ *
  * @author Tobias Angerstein
  *
  */
@@ -58,7 +56,7 @@ public class PrometheusDataExporter extends AbstractRestAction {
 
 	/**
 	 * Constructor
-	 * 
+	 *
 	 * @param metrics
 	 *            the metrics
 	 * @param host
@@ -70,8 +68,7 @@ public class PrometheusDataExporter extends AbstractRestAction {
 	 * @param timeframe
 	 *            the time frame
 	 */
-	public PrometheusDataExporter(List<String> metrics, String host, String port, String orchestratorHost, String orchestratorPort, List<String> services, long timeframe,
-			IDataHolder<OrderReport> orderReport) {
+	public PrometheusDataExporter(List<String> metrics, String host, String port, String orchestratorHost, String orchestratorPort, List<String> services, long timeframe) {
 		super(host, port);
 		this.metrics = metrics;
 		this.services = services;
@@ -134,7 +131,7 @@ public class PrometheusDataExporter extends AbstractRestAction {
 
 	/**
 	 * Builds prometheus query
-	 * 
+	 *
 	 * @return
 	 */
 	private String buildQuery() {
@@ -142,14 +139,14 @@ public class PrometheusDataExporter extends AbstractRestAction {
 		query.append("{__name__=~\"");
 		for (int i = 0; i < metrics.size(); i++) {
 			query.append(metrics.get(i));
-			if (i != metrics.size() - 1) {
+			if (i != (metrics.size() - 1)) {
 				query.append("|");
 			}
 		}
 		query.append("\",job=~\"");
 		for (int j = 0; j < services.size(); j++) {
 			query.append(services.get(j));
-			if (j != services.size() - 1) {
+			if (j != (services.size() - 1)) {
 				query.append("|");
 			}
 		}

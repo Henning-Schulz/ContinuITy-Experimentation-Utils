@@ -1,0 +1,78 @@
+---
+&sock-shop-carts timestamp: 2019-12-16T16-39-00-000Z
+endpoints:
+- !<http>
+  &cartsGetCartUsingGET domain: carts
+  port: 80
+  path: /carts/{customerId}/items
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &cartsGetCartUsingGET_customerId_URL_PART name: customerId
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &cartsDeleteCartUsingDELETE domain: carts
+  port: 80
+  path: /carts/{customerId}
+  method: DELETE
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &cartsDeleteCartUsingDELETE_customerId_REQ_URL_PART name: customerId
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &cartsAddItemToCartUsingPOST domain: carts
+  port: 80
+  path: /carts/{customerId}/items
+  method: POST
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &cartsAddItemToCartUsingPOST_customerId_REQ_URL_PART name: customerId
+    parameter-type: URL_PART
+  - &cartsAddItemToCartUsingPOST_body_BODY name: body
+    parameter-type: BODY
+  protocol: http
+
+- !<http>
+  &cartsUpdateItemUsingPATCH domain: carts
+  port: 80
+  path: /carts/{customerId}/items
+  method: PATCH
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &cartsUpdateItemUsingPATCH_customerId_REQ_URL_PART name: customerId
+    parameter-type: URL_PART
+  - &cartsUpdateItemUsingPATCH_body_BODY name: body
+    parameter-type: BODY
+  protocol: http
+
+- !<http>
+  &cartsDeleteCartItemUsingDELETE domain: carts
+  port: 80
+  path: /carts/{customerId}/items/{itemId}
+  method: DELETE
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &cartsDeleteCartItemUsingDELETE_customerId_REQ_URL_PART name: customerId
+    parameter-type: URL_PART
+  - &cartsDeleteCartItemUsingDELETE_itemId_REQ_URL_PART name: itemId
+    parameter-type: URL_PART
+  protocol: http

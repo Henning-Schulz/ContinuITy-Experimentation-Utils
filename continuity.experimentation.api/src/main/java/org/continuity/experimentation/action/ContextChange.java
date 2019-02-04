@@ -1,5 +1,8 @@
 package org.continuity.experimentation.action;
 
+import org.continuity.experimentation.data.IDataHolder;
+import org.continuity.experimentation.data.StaticDataHolder;
+
 /**
  * Encapsulates an {@link AppendContext} and {@link RemoveContext} for one context.
  *
@@ -8,18 +11,26 @@ package org.continuity.experimentation.action;
  */
 public class ContextChange {
 
-	private final String context;
+	private final IDataHolder<String> contextHolder;
 
 	public ContextChange(String context) {
-		this.context = context;
+		this.contextHolder = StaticDataHolder.of(context);
+	}
+
+	public ContextChange(IDataHolder<String> contextHolder) {
+		this.contextHolder = contextHolder;
 	}
 
 	public AppendContext append() {
-		return new AppendContext(context);
+		return new AppendContext(contextHolder);
 	}
 
 	public RemoveContext remove() {
-		return new RemoveContext(context);
+		return new RemoveContext(contextHolder);
+	}
+
+	public RenameCurrentContext renameCurrent() {
+		return new RenameCurrentContext(contextHolder);
 	}
 
 }

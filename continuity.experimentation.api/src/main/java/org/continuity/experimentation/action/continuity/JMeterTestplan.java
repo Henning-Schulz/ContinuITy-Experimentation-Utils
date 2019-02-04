@@ -3,6 +3,7 @@ package org.continuity.experimentation.action.continuity;
 import java.nio.file.Path;
 
 import org.continuity.api.entities.artifact.JMeterTestPlanBundle;
+import org.continuity.api.entities.links.LinkExchangeModel;
 import org.continuity.experimentation.data.IDataHolder;
 
 /**
@@ -54,9 +55,11 @@ public final class JMeterTestplan {
 	 *            The port of the ContinuITy orchestrator.
 	 * @param testPlanBundle
 	 *            The JMeter test plan bundle to be executed.
+	 * @param responseHolder
+	 *            [OUT] The response of the upload request.
 	 */
-	public static JMeterTestPlanUploader upload(String host, String port, IDataHolder<JMeterTestPlanBundle> testplanBundle, IDataHolder<String> tag) {
-		return new JMeterTestPlanUploader(host, port, testplanBundle, tag);
+	public static JMeterTestPlanUploader upload(String host, String port, IDataHolder<JMeterTestPlanBundle> testplanBundle, IDataHolder<String> tag, IDataHolder<LinkExchangeModel> responseHolder) {
+		return new JMeterTestPlanUploader(host, port, testplanBundle, tag, responseHolder);
 	}
 
 	/**
@@ -66,9 +69,11 @@ public final class JMeterTestplan {
 	 *            The host of the ContinuITy orchestrator.
 	 * @param testPlanBundle
 	 *            The JMeter test plan bundle to be executed.
+	 * @param responseHolder
+	 *            [OUT] The response of the upload request.
 	 */
-	public static JMeterTestPlanUploader upload(String host, IDataHolder<JMeterTestPlanBundle> testplanBundle, IDataHolder<String> tag) {
-		return new JMeterTestPlanUploader(host, testplanBundle, tag);
+	public static JMeterTestPlanUploader upload(String host, IDataHolder<JMeterTestPlanBundle> testplanBundle, IDataHolder<String> tag, IDataHolder<LinkExchangeModel> responseHolder) {
+		return new JMeterTestPlanUploader(host, testplanBundle, tag, responseHolder);
 	}
 
 }

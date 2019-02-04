@@ -1,0 +1,38 @@
+---
+&sock-shop-catalogue timestamp: 2019-12-16T16-38-00-000Z
+endpoints:
+- !<http>
+  &catalogueGetItemUsingGET domain: catalogue
+  port: 80
+  path: /catalogue/{id}
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &catalogueGetItemUsingGET_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &catalogueGetSizeUsingGET domain: catalogue
+  port: 80
+  path: /catalogue/size
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &catalogueGetTagsUsingGET domain: catalogue
+  port: 80
+  path: /tags
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http

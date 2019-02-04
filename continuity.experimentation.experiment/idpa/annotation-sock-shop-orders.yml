@@ -1,0 +1,86 @@
+---
+overrides: []
+inputs:
+- !<direct>
+  &Input_customerURLs_BODY_PART data:
+  - http://user/customers/57a98d98e4b00679b4a830af
+  - http://user/customers/57a98d98e4b00679b4a830b2
+  - http://user/customers/57a98d98e4b00679b4a830b5
+
+- !<direct>
+  &Input_addressURLs_BODY_PART data:
+  - http://user/addresses/57a98d98e4b00679b4a830ad
+  - http://user/addresses/57a98d98e4b00679b4a830b0
+  - http://user/addresses/57a98d98e4b00679b4a830b3
+  - http://user/addresses/57a98ddce4b00679b4a830d1
+
+- !<direct>
+  &Input_cardURLs_BODY_PART data:
+  - http://user/cards/57a98d98e4b00679b4a830ae
+  - http://user/cards/57a98d98e4b00679b4a830b1
+  - http://user/cards/57a98d98e4b00679b4a830b4
+  - http://user/cards/57a98ddce4b00679b4a830d2
+
+- !<direct>
+  &Input_cartItemsURLs_BODY_PART data:
+  - http://carts/carts/57a98d98e4b00679b4a830af/items
+  - http://carts/carts/57a98d98e4b00679b4a830b2/items
+  - http://carts/carts/57a98d98e4b00679b4a830b5/items
+
+- !<direct>
+  &Input_ordersSearchOrdersUsingGET_custId_REQ_PARAM data:
+  - 57a98d98e4b00679b4a830af
+  - 57a98d98e4b00679b4a830b2
+  - 57a98d98e4b00679b4a830b5
+
+- !<direct>
+  &Input_ordersSearchOrdersUsingGET_sort_REQ_PARAM data:
+  - date
+
+- !<extracted>
+  &Input_ordersGetOrderUsingGET_orderId_URL_PART extractions:
+  - from: ordersSearchOrdersUsingGET
+    pattern: 'orders/([a-z0-9]+)"'
+    match-number: 1
+
+- !<json>
+  &Input_ordersCreateOrderUsingPOST_body_BODY type: object
+  items:
+  - !<json>
+    name : customer
+    type: string  
+    input: *Input_customerURLs_BODY_PART
+  - !<json>
+    name : address 
+    type: string    
+    input: *Input_addressURLs_BODY_PART
+  - !<json>
+    name : card 
+    type: string  
+    input: *Input_cardURLs_BODY_PART
+  - !<json>
+    name: items 
+    type: string  
+    input: *Input_cartItemsURLs_BODY_PART
+
+endpoint-annotations:
+- endpoint: ordersCreateOrderUsingPOST
+  overrides: []
+  parameter-annotations:
+  - parameter: ordersCreateOrderUsingPOST_body_BODY
+    input: *Input_ordersCreateOrderUsingPOST_body_BODY
+- endpoint: ordersSearchOrdersUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: ordersSearchOrdersUsingGET_sort_REQ_PARAM
+    input: *Input_ordersSearchOrdersUsingGET_sort_REQ_PARAM
+  - parameter: ordersSearchOrdersUsingGET_custId_REQ_PARAM
+    input: *Input_ordersSearchOrdersUsingGET_custId_REQ_PARAM
+- endpoint: ordersGetHealthUsingGET
+  overrides: []
+  parameter-annotations: []
+- endpoint: ordersGetOrderUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: ordersGetOrderUsingGET_orderId_URL_PART
+    input: *Input_ordersGetOrderUsingGET_orderId_URL_PART

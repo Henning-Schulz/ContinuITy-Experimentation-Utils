@@ -1,0 +1,55 @@
+---
+overrides: []
+inputs:
+- !<direct>
+  &Input_shippingPostShippingUsingPOST_id_BODY_PART data:
+  - 13245634563456
+  - 34534674567546
+  - 34564543452343
+ 
+- !<direct>
+  &Input_shippingPostShippingUsingPOST_name_BODY_PART data:
+  - 0000
+  - 0011
+  - 2887
+  - 5378
+  - 2345
+  - 3343
+  - 6454
+  - 3454
+  - 7676
+  - 2323
+  - 4545
+
+- !<json>
+  &Input_shippingPostShippingUsingPOST_body_BODY type: object
+  items:
+  - !<json>
+    name: id
+    type: string
+    input: *Input_shippingPostShippingUsingPOST_id_BODY_PART
+    
+  - !<json>
+    name: name
+    type: string
+    input: *Input_shippingPostShippingUsingPOST_name_BODY_PART
+  
+endpoint-annotations:
+- endpoint: shippingGetShippingUsingGET
+  overrides: []
+  parameter-annotations: []
+- endpoint: shippingPostShippingUsingPOST
+  overrides: []
+  parameter-annotations:
+  - parameter: shippingPostShippingUsingPOST_body_BODY
+    input: *Input_shippingPostShippingUsingPOST_body_BODY
+    overrides: []
+- endpoint: shippingGetShippingByIdUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: shippingGetShippingByIdUsingGET_id_URL_PART
+    input: *Input_shippingPostShippingUsingPOST_id_BODY_PART
+    overrides: []
+- endpoint: shippingGetHealthUsingGET
+  overrides: []
+  parameter-annotations: []

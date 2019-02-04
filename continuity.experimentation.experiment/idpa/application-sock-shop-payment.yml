@@ -1,0 +1,27 @@
+---
+&sock-shop-payment timestamp: 2019-12-16T16-38-00-000Z
+endpoints:
+- !<http>
+  &paymentPaymentAuthorizationUsingPOST domain: payment
+  port: 80
+  path: /paymentAuth
+  method: POST
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &paymentPaymentAuthorizationUsingPOST_body_BODY name: body
+    parameter-type: BODY
+  protocol: http
+
+- !<http>
+  &paymentGetHealthUsingGET domain: payment
+  port: 80
+  path: /health
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http

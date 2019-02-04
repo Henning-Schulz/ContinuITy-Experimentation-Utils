@@ -1,0 +1,310 @@
+---
+&sock-shop timestamp: 2018-10-30T16-38-00-000Z
+endpoints:
+- !<http>
+  &cartUsingGET domain: front-end
+  port: 8079
+  path: /cart
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &cartUsingDELETE domain: front-end
+  port: 8079
+  path: /cart
+  method: DELETE
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &deleteCartItemUsingDELETE domain: front-end
+  port: 8079
+  path: /cart/{id}
+  method: DELETE
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  parameters:
+  - &deleteCartItemUsingDELETE_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &addItemToCartUsingPOST domain: front-end
+  port: 8079
+  path: /cart
+  method: POST
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &addItemToCartUsingPOST_body_BODY name: body
+    parameter-type: BODY
+  protocol: http
+
+- !<http>
+  &updateCartUsingPOST domain: front-end
+  port: 8079
+  path: /cart/update
+  method: POST
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &updateCartUsingPOST_body_BODY name: body
+    parameter-type: BODY
+  protocol: http
+
+- !<http>
+  &getCatalogueImagesUsingGET domain: front-end
+  port: 8079
+  path: /catalogue/images/{filename}
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &getCatalogueImagesUsingGET_filename_URL_PART name: filename
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &getCatalogueItemUsingGET domain: front-end
+  port: 8079
+  path: /catalogue/{id}
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &getCatalogueItemUsingGET_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &getCatalogueUsingGET domain: front-end
+  port: 8079
+  path: /catalogue
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &getCatalogueUsingGET_size_REQ_PARAM name: size
+    parameter-type: REQ_PARAM
+  - &getCatalogueUsingGET_tags_REQ_PARAM name: tags
+    parameter-type: REQ_PARAM
+  protocol: http
+
+- !<http>
+  &getCatalogueTagsUsingGET domain: front-end
+  port: 8079
+  path: /tags
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &getCatalogueSizeUsingGET domain: front-end
+  port: 8079
+  path: /catalogue/size
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &getCatalogueSizeUsingGET_tags_REQ_PARAM name: tags
+    parameter-type: REQ_PARAM
+  protocol: http
+
+- !<http>
+  &getOrdersUsingGET domain: front-end
+  port: 8079
+  path: /orders
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &getOrderUsingGET domain: front-end
+  port: 8079
+  path: /orders/{id}
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &getOrderUsingGET_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &submitOrderUsingPOST domain: front-end
+  port: 8079
+  path: /orders
+  method: POST
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &getCustomerUsingGET domain: front-end
+  port: 8079
+  path: /customers/{id}
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &getCustomerUsingGET_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &getCardUsingGET domain: front-end
+  port: 8079
+  path: /cards/{id}
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &getCardUsingGET_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &getCustomersUsingGET domain: front-end
+  port: 8079
+  path: /customers
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &getAddressesUsingGET domain: front-end
+  port: 8079
+  path: /addresses
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &getCardsUsingGET domain: front-end
+  port: 8079
+  path: /cards
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &createAddressesUsingPOST domain: front-end
+  port: 8079
+  path: /addresses
+  method: POST
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &createAddressesUsingPOST_body_BODY name: body
+    parameter-type: BODY
+  protocol: http
+
+- !<http>
+  &getCardOfCurrentCustomerUsingGET domain: front-end
+  port: 8079
+  path: /card
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &getAddressOfCurrentCustomerUsingGET domain: front-end
+  port: 8079
+  path: /address
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &createCardUsingPOST domain: front-end
+  port: 8079
+  path: /cards
+  method: POST
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &createCardUsingPOST_body_BODY name: body
+    parameter-type: BODY
+  protocol: http
+
+- !<http>
+  &registerNewUserUsingPOST domain: front-end
+  port: 8079
+  path: /register
+  method: POST
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &registerNewUserUsingPOST_body_BODY name: body
+    parameter-type: BODY
+  protocol: http
+
+- !<http>
+  &loginUsingGET domain: front-end
+  port: 8079
+  path: /login
+  method: GET
+  headers:
+  - 'Accept: application/json'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  - 'Authorization: Basic dXNlcjpwYXNzd29yZA=='
+  parameters:
+  - &loginUsingGET_base64authentification_HEADER name: Authorization
+    parameter-type: HEADER
+  protocol: http

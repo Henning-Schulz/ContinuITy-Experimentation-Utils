@@ -1,0 +1,188 @@
+---
+&sock-shop-user timestamp: 2019-12-16T16-39-00-000Z
+endpoints:
+- !<http>
+  &userGetLoginUsingGET domain: user
+  port: 80
+  path: /login
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  - 'Authorization: Basic dXNlcjpwYXNzd29yZA=='
+
+  protocol: http
+
+- !<http>
+  &userGetCustomersUsingGET domain: user
+  port: 80
+  path: /customers
+  method: get
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &userGetCustomerUsingGET domain: user
+  port: 80
+  path: /customers/{id}
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &userGetCustomerUsingGET_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &userDeleteCustomerUsingDELETE domain: user
+  port: 80
+  path: /customers/{id}
+  method: DELETE
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &userDeleteCustomerUsingDELETE_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &userGetCustomerCardsUsingGET domain: user
+  port: 80
+  path: /customers/{id}/cards
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &userGetCustomerCardsUsingGET_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &userGetCustomerAddressesUsingGET domain: user
+  port: 80
+  path: /customers/{id}/addresses
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &userGetCustomerAddressesUsingGET_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &userGetCardsUsingGET domain: user
+  port: 80
+  path: /cards
+  method: get
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &userCreateNewCardUsingPOST domain: user
+  port: 80
+  path: /cards
+  method: POST
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &userCreateNewCardUsingPOST_body_BODY name: body
+    parameter-type: BODY
+  protocol: http
+
+- !<http>
+  &userGetCardUsingGET domain: user
+  port: 80
+  path: /cards/{id}
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &userGetCardUsingGET_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &userDeleteCardUsingDELETE domain: user
+  port: 80
+  path: /cards/{id}
+  method: DELETE
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &userDeleteCardUsingDELETE_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &userGetAddressesUsingGET domain: user
+  port: 80
+  path: /addresses
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &userCreateNewAddressesUsingPOST domain: user
+  port: 80
+  path: /addresses
+  method: POST
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &userCreateNewAddressesUsingPOST_body_BODY name: body
+    parameter-type: BODY
+  protocol: http
+
+- !<http>
+  &userGetAddressUsingGET domain: user
+  port: 80
+  path: /addresses/{id}
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &userGetAddressUsingGET_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http
+
+- !<http>
+  &userDeleteAddressUsingDELETE domain: user
+  port: 80
+  path: /addresses/{id}
+  method: DELETE
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  parameters:
+  - &userDeleteAddressUsingDELETE_id_URL_PART name: id
+    parameter-type: URL_PART
+  protocol: http

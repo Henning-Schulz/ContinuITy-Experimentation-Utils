@@ -24,6 +24,8 @@ public class JMeterTestPlanUploader extends AbstractRestAction {
 
 	private IDataHolder<String> tag;
 
+	private final IDataHolder<LinkExchangeModel> responseHolder;
+
 	/**
 	 * Constructor. Use {@link JMeterTestplan#upload(String, String, IDataHolder, IDataHolder)}
 	 * instead of this constructor.
@@ -31,14 +33,17 @@ public class JMeterTestPlanUploader extends AbstractRestAction {
 	 * @param host
 	 *            The host of the ContinuITy orchestrator.
 	 * @param port
-	 *            The port of the ContinuITy orchestrator.
+	 *            [IN] The port of the ContinuITy orchestrator.
 	 * @param testPlanBundle
-	 *            The JMeter test plan bundle to be executed.
+	 *            [IN] The JMeter test plan bundle to be executed.
+	 * @param responseHolder
+	 *            [OUT] The response of the upload request.
 	 */
-	protected JMeterTestPlanUploader(String host, String port, IDataHolder<JMeterTestPlanBundle> testPlanBundle, IDataHolder<String> tag) {
+	protected JMeterTestPlanUploader(String host, String port, IDataHolder<JMeterTestPlanBundle> testPlanBundle, IDataHolder<String> tag, IDataHolder<LinkExchangeModel> responseHolder) {
 		super(host, port);
 		this.testPlanBundle = testPlanBundle;
 		this.tag = tag;
+		this.responseHolder = responseHolder;
 	}
 
 	/**
@@ -49,9 +54,11 @@ public class JMeterTestPlanUploader extends AbstractRestAction {
 	 *            The host of the ContinuITy orchestrator.
 	 * @param testPlanBundle
 	 *            The JMeter test plan bundle to be executed.
+	 * @param responseHolder
+	 *            [OUT] The response of the upload request.
 	 */
-	protected JMeterTestPlanUploader(String host, IDataHolder<JMeterTestPlanBundle> testPlanBundle, IDataHolder<String> tag) {
-		this(host, "8080", testPlanBundle, tag);
+	protected JMeterTestPlanUploader(String host, IDataHolder<JMeterTestPlanBundle> testPlanBundle, IDataHolder<String> tag, IDataHolder<LinkExchangeModel> responseHolder) {
+		this(host, "8080", testPlanBundle, tag, responseHolder);
 	}
 
 	/**
@@ -64,6 +71,7 @@ public class JMeterTestPlanUploader extends AbstractRestAction {
 	public void execute(Context context) throws AbortInnerException {
 		LOGGER.info("Uploading the test plan {} to {}...", testPlanBundle, RestApi.Orchestrator.Loadtest.POST.requestUrl("jmeter", tag.get()).withHost(getHost() + ":" + getPort()).get());
 		LinkExchangeModel linkExchangeModel = post(RestApi.Orchestrator.Loadtest.POST.requestUrl("jmeter", tag.get()).getURI(), LinkExchangeModel.class, testPlanBundle.get());
+		responseHolder.set(linkExchangeModel);
 		LOGGER.info("Response from Orchestrator service: {}", linkExchangeModel);
 	}
 

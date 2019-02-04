@@ -1,0 +1,291 @@
+---
+overrides: []
+inputs:
+- !<direct>
+  &Input_userGetCustomerUsingGET_id_URL_PART data:
+  - 57a98d98e4b00679b4a830b2
+  - 57a98d98e4b00679b4a830af
+  - 57a98d98e4b00679b4a830b5
+
+- !<direct>
+  &Input_userCreateNewAddressesUsingPOST_number_BODY_PART data:
+  - "1"
+  - "2"
+  - "3"
+  - "4"
+
+- !<direct>
+  &Input_userCreateNewAddressesUsingPOST_street_BODY_PART data:
+  - Udamstr.
+  - Uferstr.
+  - Uhlbacher Platz
+  - Uhlbacher Str.
+  - Uhlbergstr.
+  - Uhuweg
+  - Ukrainestr.
+  - Ulmenstr.
+  - Ulmer Str.
+  - Ulrichstr.
+  - Umgelterweg
+  - Ungsteiner Str.
+  - Universitaetsstr.
+  - Unkenweg
+  - Unter dem Birkenkopf
+  - Unter den Birken
+  - Unteraicher Str.
+  - Untere Brandstr.
+  - Untere Hagstr.
+  - Untere Heckenstr.
+  - Untere Querstr.
+  - Untere Schiessaeckerstr.
+  - Untere Str.
+  - Untere Waldplaetze
+  - Unterer Bruehl
+  - Unterer Dornbusch
+  - Unterer Grund
+  - Unterer Hurtweg
+  - Unterhaeuser Str.
+  - Unterlaender Str.
+  - Untertuerkheimer Kelterplatz
+  - Urachplatz
+  - Urachstr.
+  - Uranusweg
+  - Urbacher Str.
+  - Urbansplatz
+  - Urbanstr.
+  - Ursulastr.
+  - Usedomstr.
+
+- !<direct>
+  &Input_userCreateNewAddressesUsingPOST_city_BODY_PART data:
+  - Busan
+  - Shanghai
+  - Kinshasa
+  - Kolkata
+  - Shenzhen
+  - Durban
+  - Hanoi
+  - Mexico City
+  - Tehran
+  - Ho Chi Minh City
+  - Suzhou
+  - Madrid
+  - Seoul
+  - Mumbai
+  - Sao Paulo
+  - Chennai
+  - Johannesburg
+  - Singapore
+  - Tokyo
+  - Delhi
+
+- !<direct>
+  &Input_userCreateNewAddressesUsingPOST_country_BODY_PART data:
+  - KR
+  - CN
+  - CD
+  - IN
+  - CN
+  - ZA
+  - VN
+  - MX
+  - IR
+  - VN
+  - CN
+  - ES
+  - KR
+  - IN
+  - BR
+  - IN
+  - ZA
+  - SG
+  - JP
+  - IN
+ 
+- !<direct>
+  &Input_userCreateNewAddressesUsingPOST_postcode_BODY_PART data:
+  - 0000
+  - 0011
+  - 2887
+  - 5378
+  - 2345
+  - 3343
+  - 6454
+  - 3454
+  - 7676
+  - 2323
+  - 4545
+- !<json>
+  &Input_userCreateNewAddressesUsingPOST_body_BODY type: object
+  items:
+  - !<json>
+    name: number
+    type: string
+    input: *Input_userCreateNewAddressesUsingPOST_number_BODY_PART
+    
+  - !<json>
+    name: street
+    type: string
+    input: *Input_userCreateNewAddressesUsingPOST_street_BODY_PART
+    
+  - !<json>
+    name: city
+    type: string
+    input: *Input_userCreateNewAddressesUsingPOST_city_BODY_PART
+    
+  - !<json>
+    name: postcode
+    type: string
+    input: *Input_userCreateNewAddressesUsingPOST_postcode_BODY_PART
+    
+  - !<json>
+    name: country
+    type: string
+    input: *Input_userCreateNewAddressesUsingPOST_country_BODY_PART
+    
+
+- !<direct>
+  &Input_customerId data:
+  - 57a98d98e4b00679b4a830af
+  - 57a98d98e4b00679b4a830b2
+  - 57a98d98e4b00679b4a830b5
+
+- !<direct>
+  &Input_addressId data:
+  - 57a98d98e4b00679b4a830ad
+  - 57a98d98e4b00679b4a830b0
+  - 57a98d98e4b00679b4a830b3
+  - 57a98ddce4b00679b4a830d1
+
+- !<direct>
+  &Input_cardId data:
+  - 57a98d98e4b00679b4a830ae
+  - 57a98d98e4b00679b4a830b1
+  - 57a98d98e4b00679b4a830b4
+  - 57a98ddce4b00679b4a830d2
+  
+- !<direct>
+  &Input_userCreateNewCardUsingPOST_longNum_BODY_PART data:
+  - 258274587245765387
+  - 349749658734659873
+  - 763874659876983476
+  - 369538746598736593
+  - 876539874659876998
+  - 356987693847659878
+  - 734753876938476593
+  - 178765348765367777
+  - 230998953834565878
+  - 345675876587634876
+  - 987698347627398736
+
+- !<direct>
+  &Input_userCreateNewCardUsingPOST_expires_BODY_PART data:
+  - "08/22"
+
+- !<direct>
+  &Input_userCreateNewCardUsingPOST_ccv_BODY_PART data:
+  - 2424
+  - 2525
+  - 1414
+  - 7373
+  - 2425
+  - 2626
+  - 1616
+  - 3434
+  - 4646
+  - 6464
+  - 4343
+
+- !<json>
+  &Input_userCreateNewCardUsingPOST_body_BODY type: object
+  items:
+  - !<json>
+    name: longNum
+    type: string
+    input: *Input_userCreateNewCardUsingPOST_longNum_BODY_PART
+    
+  - !<json>
+    name: expires
+    type: string
+    input: *Input_userCreateNewCardUsingPOST_expires_BODY_PART
+    
+  - !<json>
+    name: ccv
+    type: string
+    input: *Input_userCreateNewCardUsingPOST_ccv_BODY_PART
+    
+
+
+endpoint-annotations:
+- endpoint: userGetLoginUsingGET
+  overrides: []
+  parameter-annotations: []
+- endpoint: userGetCustomersUsingGET
+  overrides: []
+  parameter-annotations: []
+- endpoint: userGetCustomerUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: userGetCustomerUsingGET_id_URL_PART
+    input: *Input_customerId
+    overrides: []
+- endpoint: userDeleteCustomerUsingDELETE
+  overrides: []
+  parameter-annotations:
+  - parameter: userDeleteCustomerUsingDELETE_id_URL_PART
+    input: *Input_customerId
+    overrides: []
+- endpoint: userGetCustomerCardsUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: userGetCustomerCardsUsingGET_id_URL_PART
+    input: *Input_customerId
+    overrides: []
+- endpoint: userGetCustomerAddressesUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: userGetCustomerAddressesUsingGET_id_URL_PART
+    input: *Input_customerId
+    overrides: []
+- endpoint: userGetCardsUsingGET
+  overrides: []
+  parameter-annotations: []
+- endpoint: userCreateNewCardUsingPOST
+  overrides: []
+  parameter-annotations:
+  - parameter: userCreateNewCardUsingPOST_body_BODY
+    input: *Input_userCreateNewCardUsingPOST_body_BODY
+    overrides: []
+- endpoint: userGetCardUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: userGetCardUsingGET_id_URL_PART
+    input: *Input_cardId
+    overrides: []
+- endpoint: userDeleteCardUsingDELETE
+  overrides: []
+  parameter-annotations:
+  - parameter: userDeleteCardUsingDELETE_id_URL_PART
+    input: *Input_cardId
+    overrides: []
+- endpoint: userGetAddressesUsingGET
+  overrides: []
+  parameter-annotations: []
+- endpoint: userCreateNewAddressesUsingPOST
+  overrides: []
+  parameter-annotations:
+  - parameter: userCreateNewAddressesUsingPOST_body_BODY
+    input: *Input_userCreateNewAddressesUsingPOST_body_BODY
+    overrides: []
+- endpoint: userGetAddressUsingGET
+  overrides: []
+  parameter-annotations:
+  - parameter: userGetAddressUsingGET_id_URL_PART
+    input: *Input_addressId
+    overrides: []
+- endpoint: userDeleteAddressUsingDELETE
+  overrides: []
+  parameter-annotations:
+  - parameter: userDeleteAddressUsingDELETE_id_URL_PART
+    input: *Input_addressId
+    overrides: []

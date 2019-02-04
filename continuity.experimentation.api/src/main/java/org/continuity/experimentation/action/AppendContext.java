@@ -2,6 +2,8 @@ package org.continuity.experimentation.action;
 
 import org.continuity.experimentation.Context;
 import org.continuity.experimentation.IExperimentAction;
+import org.continuity.experimentation.data.IDataHolder;
+import org.continuity.experimentation.exception.AbortInnerException;
 
 /**
  * Appends a context.
@@ -11,18 +13,20 @@ import org.continuity.experimentation.IExperimentAction;
  */
 public class AppendContext implements IExperimentAction {
 
-	private final String context;
+	private final IDataHolder<String> contextHolder;
 
-	public AppendContext(String context) {
-		this.context = context;
+	public AppendContext(IDataHolder<String> contextHolder) {
+		this.contextHolder = contextHolder;
 	}
 
 	/**
 	 * {@inheritDoc}
+	 *
+	 * @throws AbortInnerException
 	 */
 	@Override
-	public void execute(Context context) {
-		context.append(this.context);
+	public void execute(Context context) throws AbortInnerException {
+		context.append(this.contextHolder.get());
 	}
 
 	/**
@@ -30,7 +34,7 @@ public class AppendContext implements IExperimentAction {
 	 */
 	@Override
 	public String toString() {
-		return "Append \"" + context + "\"";
+		return "Append \"" + contextHolder + "\"";
 	}
 
 }

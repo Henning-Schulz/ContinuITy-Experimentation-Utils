@@ -1,0 +1,58 @@
+---
+&sock-shop-orders timestamp: 2018-10-30T16-38-00-000Z
+endpoints:
+- !<http>
+  &ordersCreateOrderUsingPOST domain: orders
+  port: 80
+  path: /orders
+  method: POST
+  parameters:
+  - &ordersCreateOrderUsingPOST_body_BODY name: body
+    parameter-type: BODY
+
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/json'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &ordersSearchOrdersUsingGET domain: orders
+  port: 80
+  path: /orders/search/customerId
+  method: GET
+  parameters:
+  - &ordersSearchOrdersUsingGET_sort_REQ_PARAM name: sort
+    parameter-type: REQ_PARAM
+  - &ordersSearchOrdersUsingGET_custId_REQ_PARAM name: custId
+    parameter-type: REQ_PARAM
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &ordersGetHealthUsingGET domain: orders
+  port: 80
+  path: /health
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
+
+- !<http>
+  &ordersGetOrderUsingGET domain: orders
+  port: 80
+  path: /orders/{orderId}
+  parameters:
+  - &ordersGetOrderUsingGET_orderId_URL_PART name: orderId
+    parameter-type: URL_PART
+  method: GET
+  headers:
+  - 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+  - 'Content-Type: application/x-www-form-urlencoded'
+  - 'X-Requested-With: XMLHttpRequest'
+  protocol: http
