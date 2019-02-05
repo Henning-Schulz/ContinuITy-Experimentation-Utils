@@ -50,7 +50,6 @@ public class Main {
 		try {
 			testExecutionsCSV = FileUtils.readFileToString(new File("test-executions.csv"), "UTF-8");
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

@@ -83,8 +83,12 @@ public class ExperimentProperties {
 		return properties.getProperty("target-server-port", "80");
 	}
 
-	public String getSatelliteHost() {
-		return properties.getProperty("satellite-host", "127.0.0.1");
+	public String getOrchestratorSatelliteHost() {
+		return properties.getProperty("satellite-host-orchestrator", "127.0.0.1");
+	}
+
+	public String getSutSatelliteHost() {
+		return properties.getProperty("satellite-host-sut", "127.0.0.1");
 	}
 
 	public String getTag() {

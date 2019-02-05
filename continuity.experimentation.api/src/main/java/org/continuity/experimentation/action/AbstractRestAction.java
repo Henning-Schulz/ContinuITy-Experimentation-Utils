@@ -40,13 +40,17 @@ public abstract class AbstractRestAction implements IExperimentAction {
 	/**
 	 * Performs a GET request and returns the response as entity.
 	 *
+	 * @param host
+	 *            The host name. Replaces the object's attribute.
+	 * @param port
+	 *            The port number. Replaces the object's attribute.
 	 * @param uri
 	 *            The URI. Should start with a /.
 	 * @param responseType
 	 *            The response type.
 	 * @return The retrieved entity.
 	 */
-	protected <T> ResponseEntity<T> getAsEntity(String uri, Class<T> responseType) {
+	protected <T> ResponseEntity<T> getAsEntity(String host, String port, String uri, Class<T> responseType) {
 		ResponseEntity<T> response;
 
 		try {
@@ -56,6 +60,36 @@ public abstract class AbstractRestAction implements IExperimentAction {
 		}
 
 		return response;
+	}
+
+	/**
+	 * Performs a GET request and returns the response as entity.
+	 *
+	 * @param host
+	 *            The host name. Replaces the object's attribute.
+	 * @param port
+	 *            The port number. Replaces the object's attribute.
+	 * @param uri
+	 *            The URI. Should start with a /.
+	 * @param responseType
+	 *            The response type.
+	 * @return The retrieved entity.
+	 */
+	protected <T> ResponseEntity<T> getAsEntity(String host, int port, String uri, Class<T> responseType) {
+		return getAsEntity(host, Integer.toString(port), uri, responseType);
+	}
+
+	/**
+	 * Performs a GET request and returns the response as entity.
+	 *
+	 * @param uri
+	 *            The URI. Should start with a /.
+	 * @param responseType
+	 *            The response type.
+	 * @return The retrieved entity.
+	 */
+	protected <T> ResponseEntity<T> getAsEntity(String uri, Class<T> responseType) {
+		return getAsEntity(this.host, this.port, uri, responseType);
 	}
 
 	/**

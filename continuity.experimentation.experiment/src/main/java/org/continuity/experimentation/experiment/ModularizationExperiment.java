@@ -1,9 +1,8 @@
 package org.continuity.experimentation.experiment;
 
+import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -26,13 +25,14 @@ import org.continuity.api.entities.report.OrderResponse;
 import org.continuity.experimentation.Experiment;
 import org.continuity.experimentation.action.Clock;
 import org.continuity.experimentation.action.ContextChange;
+import org.continuity.experimentation.action.DataBuffer;
 import org.continuity.experimentation.action.DataInvalidation;
 import org.continuity.experimentation.action.Delay;
 import org.continuity.experimentation.action.EmailReport;
+import org.continuity.experimentation.action.OpenXtrace;
 import org.continuity.experimentation.action.TargetSystem;
 import org.continuity.experimentation.action.TargetSystem.Application;
 import org.continuity.experimentation.action.continuity.GetJmeterReport;
-import org.continuity.experimentation.action.continuity.GetSessionLogsOfExecutedLoadTest;
 import org.continuity.experimentation.action.continuity.JMeterTestplan;
 import org.continuity.experimentation.action.continuity.OrderSubmission;
 import org.continuity.experimentation.action.continuity.PrometheusDataExporter;
@@ -61,9 +61,12 @@ public class ModularizationExperiment {
 	private IDataHolder<Date> testStartDate = new SimpleDataHolder<>("test-start-date", Date.class);
 	private IDataHolder<Date> testEndDate = new SimpleDataHolder<>("test-end-date", Date.class);
 	private IDataHolder<OrderReport> orderReport = new SimpleDataHolder<>("order-report", OrderReport.class);
-	private IDataHolder<String> referenceSessionLogsLink = new SimpleDataHolder<>("reference-session-logs-link", String.class);
+	private IDataHolder<OrderReport> referenceExecutionReport = new SimpleDataHolder<>("reference-execution-report", OrderReport.class);
+	private IDataHolder<String> referenceTracesLink = new SimpleDataHolder<>("reference-open-xtraces-link", String.class);
+	// private IDataHolder<String> referenceSessionLogsLink = new
+	// SimpleDataHolder<>("reference-session-logs-link", String.class);
 
-	public ModularizationExperiment(ExperimentProperties properties, List<TestExecution> testExecutions) {
+	public ModularizationExperiment(ExperimentProperties properties, List<TestExecution> testExecutions) throws MalformedURLException {
 		this.properties = properties;
 		this.testExecutions = testExecutions;
 		this.experiment = createExperiment();
@@ -73,7 +76,7 @@ public class ModularizationExperiment {
 		return experiment;
 	}
 
-	private Experiment createExperiment() {
+	private Experiment createExperiment() throws MalformedURLException {
 		StableExperimentBuilder builder = Experiment.newExperiment("exp-modularization");
 
 		builder = appendInitialUploads(builder);
@@ -123,9 +126,10 @@ public class ModularizationExperiment {
 	 * Executes the reference load test and collects the traces
 	 *
 	 * @param builder
+	 * @throws MalformedURLException
 	 * @throws AbortInnerException
 	 */
-	private StableExperimentBuilder appendReferenceLoadTest(StableExperimentBuilder builder) {
+	private StableExperimentBuilder appendReferenceLoadTest(StableExperimentBuilder builder) throws MalformedURLException {
 		ContextChange context = new ContextChange("reference-load-test");
 
 		builder = builder.append(context.append()).append(EmailReport.send());
@@ -136,12 +140,30 @@ public class ModularizationExperiment {
 		builder = appendSystemRestart(builder);
 		builder = appendTestExecution(builder, order, referenceTestLinks);
 
-		// TODO: Upload the traces to somewhere else
+		IDataHolder<String> traceHolder = new SimpleDataHolder<>("open-xtraces", String.class);
 
-		builder = builder
-				.append(new GetSessionLogsOfExecutedLoadTest(properties.getOrchestratorHost(), properties.getOrchestratorPort(), properties.getTag(), orderReport,
-						properties.getExternalTraceSourceLink(), properties.getOrderReportTimeout(), referenceSessionLogsLink)) //
-				.append(new DataInvalidation(orderReport));
+		IDataHolder<LinkExchangeModel> sessionLogsSource = new ProcessingDataHolder<>("session-logs-source", referenceTracesLink, link -> {
+			LinkExchangeModel source = new LinkExchangeModel();
+			source.getMeasurementDataLinks().setLink(link);
+			source.getMeasurementDataLinks().setLinkType(ExternalDataLinkType.OPEN_XTRACE);
+			try {
+				source.getMeasurementDataLinks().setTimestamp(testEndDate.get());
+			} catch (AbortInnerException e) {
+				e.printStackTrace();
+				source.getMeasurementDataLinks().setTimestamp(new Date());
+			}
+			return source;
+		});
+
+		IDataHolder<OrderResponse> orderResponse = new SimpleDataHolder<>("session-logs-creation-order-response", OrderResponse.class);
+		order = createOrder(OrderGoal.CREATE_SESSION_LOGS);
+
+		builder = builder.append(OpenXtrace.download(properties.getExternalTraceSourceLink(), testStartDate, testEndDate, properties.getDateFormat(), traceHolder)) //
+				.append(DataBuffer.upload(properties.getOrchestratorSatelliteHost(), traceHolder, referenceTracesLink)) //
+				.append(new DataInvalidation(traceHolder)) //
+				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), order, orderResponse, sessionLogsSource)) //
+				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), StaticDataHolder.of(order), orderResponse, referenceExecutionReport,
+						properties.getOrderReportTimeout()));
 
 		builder.append(context.remove());
 
@@ -168,7 +190,7 @@ public class ModularizationExperiment {
 				.append(innerContext.renameCurrent()) //
 				.newThread().append(ctxt -> initLoadTestCreationOrder(testExecutionsHolder, orderHolder)) //
 				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse)) //
-				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderResponse, orderReport, properties.getOrderReportTimeout())) //
+				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse, orderReport, properties.getOrderReportTimeout())) //
 				.newThread(); //
 
 		LoopBuilder<StableExperimentBuilder> loopBuilder = appendSystemRestart(threadBuilder) //
@@ -204,17 +226,15 @@ public class ModularizationExperiment {
 			order.setModularizationOptions(modularizationOptions);
 		}
 
-		DateFormat dateFormat = new SimpleDateFormat(properties.getDateFormat());
 		LinkExchangeModel linkExchangeModel = new LinkExchangeModel();
 
-		linkExchangeModel.getMeasurementDataLinks()
-				.setLink(properties.getExternalTraceSourceLink() + "?fromDate=" + dateFormat.format(testStartDate.get()) + "&toDate=" + dateFormat.format(testEndDate.get()));
+		linkExchangeModel.getMeasurementDataLinks().setLink(referenceTracesLink.get());
 		linkExchangeModel.getMeasurementDataLinks().setLinkType(ExternalDataLinkType.OPEN_XTRACE);
 		linkExchangeModel.getMeasurementDataLinks().setTimestamp(testEndDate.get());
 
 		if (exec.getModularizationApproach() != ModularizationApproach.SESSION_LOGS) {
 			// Already created session logs can be reused
-			linkExchangeModel.getSessionLogsLinks().setLink(referenceSessionLogsLink.get());
+			linkExchangeModel.getSessionLogsLinks().setLink(referenceExecutionReport.get().getInternalArtifacts().getSessionLogsLinks().getLink());
 		}
 
 		order.setSource(linkExchangeModel);
@@ -246,7 +266,7 @@ public class ModularizationExperiment {
 	 * @return
 	 */
 	private <B extends ExperimentBuilder<B, C>, C> B appendSystemRestart(B builder) {
-		return builder.append(TargetSystem.restart(Application.SOCK_SHOP, properties.getSatelliteHost())).append(new Delay(300000))
+		return builder.append(TargetSystem.restart(Application.SOCK_SHOP, properties.getSutSatelliteHost())).append(new Delay(300000))
 				.append(TargetSystem.waitFor(Application.SOCK_SHOP, properties.getTargetServerHost(), properties.getTargetServerPort(), 1800000))
 				.append(new Delay(properties.getDelayBetweenExecutions()));
 	}
@@ -265,11 +285,13 @@ public class ModularizationExperiment {
 		IDataHolder<OrderResponse> orderResponse = new SimpleDataHolder<>("test-execution-order-response", OrderResponse.class);
 
 		// TODO: Do we need to subtract an hour from the start and end time?
-		return builder.append(Clock.takeTime(testStartDate)).append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), order, orderResponse, source))
-				.append(new Delay(properties.getLoadTestDuration() * 1000))
-				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderResponse, orderReport, properties.getOrderReportTimeout()))
+		return builder.append(Clock.takeTime(testStartDate)) //
+				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), order, orderResponse, source)) //
+				.append(new Delay(properties.getLoadTestDuration() * 1000)) //
+				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), StaticDataHolder.of(order), orderResponse, orderReport,
+						properties.getOrderReportTimeout())) //
 				.append(Clock.takeTime(testEndDate)).append(new PrometheusDataExporter(metrics, properties.getPrometheusHost(), properties.getPrometheusPort(), properties.getOrchestratorHost(),
-						properties.getOrchestratorPort(), allServicesToMonitor, properties.getLoadTestDuration()))
+						properties.getOrchestratorPort(), allServicesToMonitor, properties.getLoadTestDuration())) //
 				.append(new GetJmeterReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderReport));
 	}
 
