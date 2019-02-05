@@ -16,6 +16,7 @@ import org.continuity.idpa.annotation.ApplicationAnnotation;
 import org.continuity.idpa.yaml.IdpaYamlSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
 
 /**
  *
@@ -89,13 +90,17 @@ public class UploadAnnotation extends AbstractRestAction {
 
 	@Override
 	public void execute(Context context) throws AbortInnerException, AbortException, Exception {
-		String response = post(RestApi.Orchestrator.Idpa.UPDATE_ANNOTATION.path(tag.get()), String.class, annotation.get());
-		report.set(response);
+		ResponseEntity<String> response = postForEntity(RestApi.Orchestrator.Idpa.UPDATE_ANNOTATION.path(tag.get()), annotation.get());
+		report.set(response.getBody());
+
+		if (!response.getStatusCode().is2xxSuccessful()) {
+			LOGGER.warn("Issues when uploading annotation {}: {} - {}", annotation, response.getStatusCodeValue(), response.getBody());
+		}
 
 		Path path = context.toPath().resolve("annotation-upload-report.json");
-		Files.write(path, Arrays.asList(response.split("\\n")), StandardOpenOption.CREATE);
+		Files.write(path, Arrays.asList(response.getBody().split("\\n")), StandardOpenOption.CREATE);
 
-		LOGGER.info("Uploaded annotation {}.", annotation.get().getId());
+		LOGGER.info("Uploaded annotation {} with tag {}.", annotation.get().getId(), tag.get());
 	}
 
 	public static class Builder {

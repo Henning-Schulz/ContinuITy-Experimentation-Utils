@@ -33,15 +33,15 @@ public class OpenXtrace {
 
 		private static final Logger LOGGER = LoggerFactory.getLogger(OpenXtrace.Downloader.class);
 
-		private final String url;
+		private final String path;
 		private final IDataHolder<Date> startDate;
 		private final IDataHolder<Date> endDate;
 		private final DateFormat dateFormat;
 		private final IDataHolder<String> traceHolder;
 
-		private Downloader(String host, String port, String url, IDataHolder<Date> startDate, IDataHolder<Date> endDate, String dateFormat, IDataHolder<String> traceHolder) {
+		private Downloader(String host, String port, String path, IDataHolder<Date> startDate, IDataHolder<Date> endDate, String dateFormat, IDataHolder<String> traceHolder) {
 			super(host, port);
-			this.url = url;
+			this.path = path;
 			this.startDate = startDate;
 			this.endDate = endDate;
 			this.dateFormat = new SimpleDateFormat(dateFormat);
@@ -51,8 +51,8 @@ public class OpenXtrace {
 
 		@Override
 		public void execute(Context context) throws AbortInnerException, AbortException, Exception {
-			String requestUrl = url + "?fromDate=" + dateFormat.format(startDate.get()) + "&toDate=" + dateFormat.format(endDate.get());
-			LOGGER.info("Retrieving OPEN.xtraces from {}...", requestUrl);
+			String requestUrl = path + "?fromDate=" + dateFormat.format(startDate.get()) + "&toDate=" + dateFormat.format(endDate.get());
+			LOGGER.info("Retrieving OPEN.xtraces from {}{}...", super.toString(), requestUrl);
 
 			String traces = get(requestUrl, String.class);
 			traceHolder.set(traces);

@@ -10,8 +10,20 @@ import org.continuity.experimentation.data.SimpleDataHolder;
 import org.continuity.experimentation.data.StaticDataHolder;
 import org.continuity.experimentation.exception.AbortException;
 import org.continuity.experimentation.exception.AbortInnerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator.Feature;
 
 public class OrderSubmission extends AbstractRestAction {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(OrderSubmission.class);
+
+	private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory().enable(Feature.MINIMIZE_QUOTES).enable(Feature.USE_NATIVE_OBJECT_ID));
 
 	/**
 	 * Order
@@ -72,7 +84,17 @@ public class OrderSubmission extends AbstractRestAction {
 		if(source.isSet()) {
 			order.get().setSource(source.get());
 		}
-		orderResponse.set(post("/order/submit", OrderResponse.class, order));
+		orderResponse.set(post("/order/submit", OrderResponse.class, order.get()));
+
+		ObjectWriter writer = MAPPER.writer(new DefaultPrettyPrinter());
+		writer.writeValue(context.toPath().resolve("order.yml").toFile(), order.get());
+		writer.writeValue(context.toPath().resolve("order-response.yml").toFile(), orderResponse.get());
+
+		LOGGER.info("Submitted an order and stored it to {}", context.toPath().resolve("order.yml"));
+
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("Order response is {}", writer.writeValueAsString(orderResponse.get()));
+		}
 	}
 
 }

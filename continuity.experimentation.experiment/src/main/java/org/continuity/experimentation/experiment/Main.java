@@ -42,7 +42,8 @@ public class Main {
 
 		ModularizationExperiment experiment = new ModularizationExperiment(props, testExecutions);
 
-		System.out.println(experiment.getExperiment());
+		// System.out.println(experiment.getExperiment());
+		experiment.getExperiment().execute();
 	}
 
 	private static List<TestExecution> readTestExecutions() {

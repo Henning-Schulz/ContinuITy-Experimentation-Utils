@@ -7,6 +7,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Date;
 
+import org.continuity.api.rest.RestApi;
 import org.continuity.experimentation.Context;
 import org.continuity.experimentation.action.AbstractRestAction;
 import org.continuity.experimentation.data.IDataHolder;
@@ -91,13 +92,13 @@ public class UploadApplicationModel extends AbstractRestAction {
 	public void execute(Context context) throws AbortInnerException, AbortException, Exception {
 		Application systemModel = application.get();
 		systemModel.setTimestamp(new Date()); // TODO
-		String response = post("/annotation/" + tag.get() + "/system", String.class, systemModel);
+		String response = post(RestApi.Orchestrator.Idpa.UPDATE_APPLICATION.path(tag.get()), String.class, systemModel);
 		report.set(response);
 
-		Path path = context.toPath().resolve("system-upload-report.json");
+		Path path = context.toPath().resolve("application-upload-report.json");
 		Files.write(path, Arrays.asList(response.split("\\n")), StandardOpenOption.CREATE);
 
-		LOGGER.info("Uploaded system model {}.", systemModel.getId());
+		LOGGER.info("Uploaded application model {} with tag {}.", systemModel.getId(), tag.get());
 	}
 
 	public static class Builder {

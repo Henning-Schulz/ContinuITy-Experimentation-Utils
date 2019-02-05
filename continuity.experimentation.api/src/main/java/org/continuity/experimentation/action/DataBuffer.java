@@ -75,7 +75,7 @@ public class DataBuffer {
 			LOGGER.info("Uploading '{}' to the satellite buffer at {}:{}...", data, getHost(), getPort());
 
 			String response = post(UPLOAD_PATH, String.class, data);
-			link.set(UriComponentsBuilder.fromPath(response).host(getHost()).port(getPort()).build().toString());
+			link.set(UriComponentsBuilder.fromPath(response).host(getHost()).port(getPort()).scheme("http").build().toString());
 
 			LOGGER.info("Upload usscessful. Can be retrieved from {}.", link.get());
 		}

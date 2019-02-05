@@ -34,7 +34,7 @@ public class DataBuffer {
 	@RequestMapping(value = "/upload", method = RequestMethod.POST)
 	public ResponseEntity<String> upload(HttpServletRequest request, @RequestBody String data) {
 		String key = LINK_PREFIX + counter.incrementAndGet();
-		String url = UriComponentsBuilder.fromPath(key).host(request.getRemoteHost()).port(request.getRemotePort()).build().toString();
+		String url = UriComponentsBuilder.fromPath(key).host(request.getRemoteHost()).port(request.getRemotePort()).scheme(request.getScheme()).build().toString();
 		storage.put(key, data);
 		return ResponseEntity.created(URI.create(url)).body(key);
 	}

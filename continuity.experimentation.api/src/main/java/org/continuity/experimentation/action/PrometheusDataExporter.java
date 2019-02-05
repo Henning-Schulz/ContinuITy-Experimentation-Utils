@@ -1,4 +1,4 @@
-package org.continuity.experimentation.action.continuity;
+package org.continuity.experimentation.action;
 
 import java.io.IOException;
 import java.net.URI;
@@ -10,7 +10,6 @@ import java.util.Map.Entry;
 
 import org.apache.commons.io.FileUtils;
 import org.continuity.experimentation.Context;
-import org.continuity.experimentation.action.AbstractRestAction;
 import org.continuity.experimentation.exception.AbortException;
 import org.continuity.experimentation.exception.AbortInnerException;
 import org.slf4j.Logger;
@@ -125,7 +124,7 @@ public class PrometheusDataExporter extends AbstractRestAction {
 		// Create CSV files
 		for (Entry<Path, String> fileToExport : csvInputs.entrySet()) {
 			FileUtils.writeStringToFile(fileToExport.getKey().toFile(), fileToExport.getValue(), Charset.defaultCharset());
-			LOGGER.info("Saved prometheus metric to {}.", fileToExport.getKey());
+			LOGGER.debug("Saved prometheus metric to {}.", fileToExport.getKey());
 		}
 
 	}

@@ -1,6 +1,8 @@
 package org.continuity.experimentation.action;
 
 import org.continuity.experimentation.IExperimentAction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -12,6 +14,8 @@ import org.springframework.web.client.RestTemplate;
  *
  */
 public abstract class AbstractRestAction implements IExperimentAction {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRestAction.class);
 
 	private final String host;
 	private final String port;
@@ -54,7 +58,9 @@ public abstract class AbstractRestAction implements IExperimentAction {
 		ResponseEntity<T> response;
 
 		try {
-			response = restTemplate.getForEntity("http://" + host + ":" + port + uri, responseType);
+			String url = "http://" + host + ":" + port + uri;
+			LOGGER.debug("Submitting a GET request to {}...", url);
+			response = restTemplate.getForEntity(url, responseType);
 		} catch (HttpStatusCodeException e) {
 			response = ResponseEntity.status(e.getStatusCode()).build();
 		}
@@ -104,7 +110,9 @@ public abstract class AbstractRestAction implements IExperimentAction {
 	 *             If the response code was not a 2xx.
 	 */
 	protected <T> T get(String uri, Class<T> responseType) throws RuntimeException {
-		ResponseEntity<T> response = restTemplate.getForEntity("http://" + host + ":" + port + uri, responseType);
+		String url = "http://" + host + ":" + port + uri;
+		LOGGER.debug("Submitting a GET request to {}...", url);
+		ResponseEntity<T> response = restTemplate.getForEntity(url, responseType);
 		return response.getBody();
 	}
 
@@ -121,8 +129,37 @@ public abstract class AbstractRestAction implements IExperimentAction {
 	 * @throws RuntimeException
 	 *             If the response code was not a 2xx.
 	 */
+	protected <S> ResponseEntity<String> postForEntity(String uri, S body) throws RuntimeException {
+		ResponseEntity<String> response;
+
+		try {
+			String url = "http://" + host + ":" + port + uri;
+			LOGGER.debug("Submitting a POST request to {}...", url);
+			response = restTemplate.postForEntity(url, body, String.class);
+		} catch (HttpStatusCodeException e) {
+			response = ResponseEntity.status(e.getStatusCode()).body(e.getResponseBodyAsString());
+		}
+
+		return response;
+	}
+
+	/**
+	 * Performs a POST request.
+	 *
+	 * @param uri
+	 *            The URI. Should start with a /.
+	 * @param responseType
+	 *            The response type.
+	 * @param body
+	 *            The body to be sent.
+	 * @return The retrieved entity.
+	 * @throws RuntimeException
+	 *             If the response code was not a 2xx.
+	 */
 	protected <T, S> T post(String uri, Class<T> responseType, S body) throws RuntimeException {
-		ResponseEntity<T> response = restTemplate.postForEntity("http://" + host + ":" + port + uri, body, responseType);
+		String url = "http://" + host + ":" + port + uri;
+		LOGGER.debug("Submitting a POST request to {}...", url);
+		ResponseEntity<T> response = restTemplate.postForEntity(url, body, responseType);
 
 		if (!response.getStatusCode().is2xxSuccessful()) {
 			throw new RuntimeException("Return code was " + response.getStatusCode());
@@ -144,7 +181,7 @@ public abstract class AbstractRestAction implements IExperimentAction {
 	 */
 	@Override
 	public String toString() {
-		return host + ":" + port;
+		return "Request to " + host + ":" + port;
 	}
 
 }

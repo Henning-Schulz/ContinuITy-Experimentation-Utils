@@ -30,12 +30,12 @@ import org.continuity.experimentation.action.DataInvalidation;
 import org.continuity.experimentation.action.Delay;
 import org.continuity.experimentation.action.EmailReport;
 import org.continuity.experimentation.action.OpenXtrace;
+import org.continuity.experimentation.action.PrometheusDataExporter;
 import org.continuity.experimentation.action.TargetSystem;
 import org.continuity.experimentation.action.TargetSystem.Application;
 import org.continuity.experimentation.action.continuity.GetJmeterReport;
 import org.continuity.experimentation.action.continuity.JMeterTestplan;
 import org.continuity.experimentation.action.continuity.OrderSubmission;
-import org.continuity.experimentation.action.continuity.PrometheusDataExporter;
 import org.continuity.experimentation.action.continuity.UploadAnnotation;
 import org.continuity.experimentation.action.continuity.UploadApplicationModel;
 import org.continuity.experimentation.action.continuity.WaitForOrderReport;
@@ -63,8 +63,6 @@ public class ModularizationExperiment {
 	private IDataHolder<OrderReport> orderReport = new SimpleDataHolder<>("order-report", OrderReport.class);
 	private IDataHolder<OrderReport> referenceExecutionReport = new SimpleDataHolder<>("reference-execution-report", OrderReport.class);
 	private IDataHolder<String> referenceTracesLink = new SimpleDataHolder<>("reference-open-xtraces-link", String.class);
-	// private IDataHolder<String> referenceSessionLogsLink = new
-	// SimpleDataHolder<>("reference-session-logs-link", String.class);
 
 	public ModularizationExperiment(ExperimentProperties properties, List<TestExecution> testExecutions) throws MalformedURLException {
 		this.properties = properties;
@@ -106,20 +104,28 @@ public class ModularizationExperiment {
 				.collect(Collectors.toList());
 		List<Path> annPaths = Arrays.stream(idpaElements).filter(s -> s.startsWith("annotation-") && s.endsWith(".yml")).map(file -> Paths.get(properties.getIdpaFilePath(), file))
 				.collect(Collectors.toList());
-		SequentialListDataHolder<Path> appHolder = new SequentialListDataHolder<>("idpa-applications", appPaths);
-		SequentialListDataHolder<Path> annHolder = new SequentialListDataHolder<>("idpa-annotations", annPaths);
+		SequentialListDataHolder<Path> appHolder = new SequentialListDataHolder<>("idpa-application", appPaths);
+		SequentialListDataHolder<Path> annHolder = new SequentialListDataHolder<>("idpa-annotation", annPaths);
 
 		builder = builder.loop(appPaths.size()) //
-				.append(UploadApplicationModel.from(appHolder, StaticDataHolder.of(properties.getTag())).to(properties.getOrchestratorHost(), properties.getOrchestratorPort(),
+				.append(UploadApplicationModel.from(appHolder, new ProcessingDataHolder<>("idpa-app-tag", appHolder, this::extractTagFromIdpaPath)).to(properties.getOrchestratorHost(),
+						properties.getOrchestratorPort(),
 						NoopDataHolder.instance())) //
 				.append(appHolder::next).endLoop().loop(annPaths.size()) //
-				.append(UploadAnnotation.from(annHolder, StaticDataHolder.of(properties.getTag())).to(properties.getOrchestratorHost(), properties.getOrchestratorPort(), NoopDataHolder.instance())) //
+				.append(UploadAnnotation.from(annHolder, new ProcessingDataHolder<>("idpa-app-tag", annHolder, this::extractTagFromIdpaPath)).to(properties.getOrchestratorHost(),
+						properties.getOrchestratorPort(), NoopDataHolder.instance())) //
 				.append(annHolder::next) //
 				.endLoop();
 
 		builder.append(context.remove());
 
 		return builder;
+	}
+
+	private String extractTagFromIdpaPath(Path path) {
+		String file = path.getFileName().toString();
+
+		return file.substring(file.indexOf("-") + 1, file.lastIndexOf("."));
 	}
 
 	/**
@@ -139,6 +145,10 @@ public class ModularizationExperiment {
 
 		builder = appendSystemRestart(builder);
 		builder = appendTestExecution(builder, order, referenceTestLinks);
+
+		builder = builder.append(context.remove());
+		context = new ContextChange("session-logs-creation");
+		builder = builder.append(context.append());
 
 		IDataHolder<String> traceHolder = new SimpleDataHolder<>("open-xtraces", String.class);
 
@@ -165,7 +175,7 @@ public class ModularizationExperiment {
 				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), StaticDataHolder.of(order), orderResponse, referenceExecutionReport,
 						properties.getOrderReportTimeout()));
 
-		builder.append(context.remove());
+		builder = builder.append(context.remove());
 
 		return builder;
 	}
@@ -272,7 +282,7 @@ public class ModularizationExperiment {
 					.append(TargetSystem.waitFor(Application.SOCK_SHOP, properties.getTargetServerHost(), properties.getTargetServerPort(), 1800000))
 					.append(new Delay(properties.getDelayBetweenExecutions()));
 		} else {
-			return builder;
+			return builder.append(new Delay(1));
 		}
 	}
 

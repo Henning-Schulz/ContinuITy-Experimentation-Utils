@@ -114,7 +114,7 @@ public class WaitForOrderReport extends AbstractRestAction {
 		ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(Feature.MINIMIZE_QUOTES).enable(Feature.USE_NATIVE_OBJECT_ID));
 		if (orderResponse.isSet() && (orderResponse.get().getWaitLink() != null)) {
 			URL url = new URL(orderResponse.get().getWaitLink());
-			LOGGER.info("Wait for order to be finished");
+			LOGGER.info("Wait for order {} to be finished", orderResponse.get().getWaitLink());
 			OrderReport receivedOrderReport = null;
 			while(null == receivedOrderReport) {
 				LOGGER.info("Waiting for {} millis", timeout);
