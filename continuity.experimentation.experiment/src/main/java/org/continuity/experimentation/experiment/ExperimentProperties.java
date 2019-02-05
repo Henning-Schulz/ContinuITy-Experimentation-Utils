@@ -91,6 +91,10 @@ public class ExperimentProperties {
 		return properties.getProperty("satellite-host-sut", "127.0.0.1");
 	}
 
+	public boolean omitSutRestart() {
+		return Boolean.parseBoolean(properties.getProperty("omit-sut-restart", "false"));
+	}
+
 	public String getTag() {
 		return tag;
 	}

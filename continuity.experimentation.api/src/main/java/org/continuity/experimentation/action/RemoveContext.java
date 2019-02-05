@@ -4,6 +4,8 @@ import org.continuity.experimentation.Context;
 import org.continuity.experimentation.IExperimentAction;
 import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.exception.AbortInnerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Removes a context.
@@ -13,6 +15,8 @@ import org.continuity.experimentation.exception.AbortInnerException;
  */
 public class RemoveContext implements IExperimentAction {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(RemoveContext.class);
+
 	private final IDataHolder<String> contextHolder;
 
 	public RemoveContext(IDataHolder<String> contextHolder) {
@@ -21,12 +25,13 @@ public class RemoveContext implements IExperimentAction {
 
 	/**
 	 * {@inheritDoc}
-	 * 
+	 *
 	 * @throws AbortInnerException
 	 */
 	@Override
 	public void execute(Context context) throws AbortInnerException {
 		context.remove(this.contextHolder.get());
+		LOGGER.info("Changed context to {} by removing {}.", context, contextHolder.get());
 	}
 
 	/**

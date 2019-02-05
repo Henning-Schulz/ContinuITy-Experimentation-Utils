@@ -266,9 +266,14 @@ public class ModularizationExperiment {
 	 * @return
 	 */
 	private <B extends ExperimentBuilder<B, C>, C> B appendSystemRestart(B builder) {
-		return builder.append(TargetSystem.restart(Application.SOCK_SHOP, properties.getSutSatelliteHost())).append(new Delay(300000))
-				.append(TargetSystem.waitFor(Application.SOCK_SHOP, properties.getTargetServerHost(), properties.getTargetServerPort(), 1800000))
-				.append(new Delay(properties.getDelayBetweenExecutions()));
+		if (!properties.omitSutRestart()) {
+			return builder.append(TargetSystem.restart(Application.SOCK_SHOP, properties.getSutSatelliteHost())) //
+					.append(new Delay(300000))
+					.append(TargetSystem.waitFor(Application.SOCK_SHOP, properties.getTargetServerHost(), properties.getTargetServerPort(), 1800000))
+					.append(new Delay(properties.getDelayBetweenExecutions()));
+		} else {
+			return builder;
+		}
 	}
 
 	/**
@@ -290,8 +295,9 @@ public class ModularizationExperiment {
 				.append(new Delay(properties.getLoadTestDuration() * 1000)) //
 				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), StaticDataHolder.of(order), orderResponse, orderReport,
 						properties.getOrderReportTimeout())) //
-				.append(Clock.takeTime(testEndDate)).append(new PrometheusDataExporter(metrics, properties.getPrometheusHost(), properties.getPrometheusPort(), properties.getOrchestratorHost(),
-						properties.getOrchestratorPort(), allServicesToMonitor, properties.getLoadTestDuration())) //
+				.append(Clock.takeTime(testEndDate))
+				.append(new PrometheusDataExporter(metrics, properties.getPrometheusHost(), properties.getPrometheusPort(), properties.getOrchestratorHost(), properties.getOrchestratorPort(),
+						allServicesToMonitor, properties.getLoadTestDuration())) //
 				.append(new GetJmeterReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderReport));
 	}
 

@@ -4,6 +4,8 @@ import org.continuity.experimentation.Context;
 import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.exception.AbortException;
 import org.continuity.experimentation.exception.AbortInnerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
@@ -51,6 +53,8 @@ public class DataBuffer {
 
 	public static class Uploader<T> extends AbstractRestAction {
 
+		private static final Logger LOGGER = LoggerFactory.getLogger(DataBuffer.Uploader.class);
+
 		private static final String UPLOAD_PATH = "/buffer/upload";
 
 		private final IDataHolder<T> data;
@@ -68,8 +72,12 @@ public class DataBuffer {
 
 		@Override
 		public void execute(Context context) throws AbortInnerException, AbortException, Exception {
+			LOGGER.info("Uploading '{}' to the satellite buffer at {}:{}...", data, getHost(), getPort());
+
 			String response = post(UPLOAD_PATH, String.class, data);
 			link.set(UriComponentsBuilder.fromPath(response).host(getHost()).port(getPort()).build().toString());
+
+			LOGGER.info("Upload usscessful. Can be retrieved from {}.", link.get());
 		}
 
 	}

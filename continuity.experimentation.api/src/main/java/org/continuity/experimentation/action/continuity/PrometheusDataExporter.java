@@ -125,6 +125,7 @@ public class PrometheusDataExporter extends AbstractRestAction {
 		// Create CSV files
 		for (Entry<Path, String> fileToExport : csvInputs.entrySet()) {
 			FileUtils.writeStringToFile(fileToExport.getKey().toFile(), fileToExport.getValue(), Charset.defaultCharset());
+			LOGGER.info("Saved prometheus metric to {}.", fileToExport.getKey());
 		}
 
 	}
