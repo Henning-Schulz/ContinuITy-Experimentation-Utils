@@ -21,12 +21,15 @@ public class OpenXtrace {
 	}
 
 	public static Downloader download(String host, String port, String basePath, IDataHolder<Date> startDate, IDataHolder<Date> endDate, String dateFormat, IDataHolder<String> traceHolder) {
-		return new Downloader(host, port, basePath, startDate, endDate, dateFormat, traceHolder);
+		return new Downloader("http", host, port, basePath, startDate, endDate, dateFormat, traceHolder);
 	}
 
 	public static Downloader download(String urlString, IDataHolder<Date> startDate, IDataHolder<Date> endDate, String dateFormat, IDataHolder<String> traceHolder) throws MalformedURLException {
 		URL url = new URL(urlString);
-		return new Downloader(url.getHost(), Integer.toString(url.getPort()), url.getPath(), startDate, endDate, dateFormat, traceHolder);
+		int port = url.getPort() > 0 ? url.getPort() : 80;
+		String protocol = url.getProtocol() == null ? "http" : url.getProtocol();
+
+		return new Downloader(protocol, url.getHost(), Integer.toString(port), url.getPath(), startDate, endDate, dateFormat, traceHolder);
 	}
 
 	public static class Downloader extends AbstractRestAction {
@@ -39,8 +42,8 @@ public class OpenXtrace {
 		private final DateFormat dateFormat;
 		private final IDataHolder<String> traceHolder;
 
-		private Downloader(String host, String port, String path, IDataHolder<Date> startDate, IDataHolder<Date> endDate, String dateFormat, IDataHolder<String> traceHolder) {
-			super(host, port);
+		private Downloader(String protocol, String host, String port, String path, IDataHolder<Date> startDate, IDataHolder<Date> endDate, String dateFormat, IDataHolder<String> traceHolder) {
+			super(protocol, host, port);
 			this.path = path;
 			this.startDate = startDate;
 			this.endDate = endDate;

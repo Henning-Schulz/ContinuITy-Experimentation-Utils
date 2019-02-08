@@ -102,7 +102,7 @@ public class StartNewRecording extends AbstractRestAction {
 		String pattern = "yyyy-MM-dd-HH-mm-ss";
 		SimpleDateFormat format = new SimpleDateFormat(pattern);
 		if (!storageNameSet) {
-			this.storageName = context.toString().replace("#", "-") + "--" + format.format(currentDate);
+			this.storageName = context.toString().replace(Context.SEPARATOR, "-").replace("#", "-") + "--" + format.format(currentDate);
 		}
 		// Set startDate
 		timeDataHolder.set(new Date());

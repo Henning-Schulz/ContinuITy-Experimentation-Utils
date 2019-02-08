@@ -31,7 +31,6 @@ public class AppendContext implements IExperimentAction {
 	@Override
 	public void execute(Context context) throws AbortInnerException {
 		context.append(this.contextHolder.get());
-		LOGGER.info("Changed context to {} by appending {}.", context, contextHolder.get());
 	}
 
 	/**

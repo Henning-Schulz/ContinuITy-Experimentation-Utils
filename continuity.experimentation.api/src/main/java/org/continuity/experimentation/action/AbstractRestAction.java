@@ -17,12 +17,14 @@ public abstract class AbstractRestAction implements IExperimentAction {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRestAction.class);
 
+	private final String protocol;
 	private final String host;
 	private final String port;
 
 	private final RestTemplate restTemplate;
 
-	public AbstractRestAction(String host, String port, RestTemplate restTemplate) {
+	public AbstractRestAction(String protocol, String host, String port, RestTemplate restTemplate) {
+		this.protocol = protocol;
 		this.host = host;
 		this.port = port;
 
@@ -33,8 +35,16 @@ public abstract class AbstractRestAction implements IExperimentAction {
 		}
 	}
 
+	public AbstractRestAction(String host, String port, RestTemplate restTemplate) {
+		this("http", host, port, restTemplate);
+	}
+
+	public AbstractRestAction(String protocol, String host, String port) {
+		this(protocol, host, port, null);
+	}
+
 	public AbstractRestAction(String host, String port) {
-		this(host, port, null);
+		this(host, port, (RestTemplate) null);
 	}
 
 	public AbstractRestAction(String host) {
@@ -58,7 +68,7 @@ public abstract class AbstractRestAction implements IExperimentAction {
 		ResponseEntity<T> response;
 
 		try {
-			String url = "http://" + host + ":" + port + uri;
+			String url = protocol + "://" + host + ":" + port + uri;
 			LOGGER.debug("Submitting a GET request to {}...", url);
 			response = restTemplate.getForEntity(url, responseType);
 		} catch (HttpStatusCodeException e) {
@@ -110,7 +120,7 @@ public abstract class AbstractRestAction implements IExperimentAction {
 	 *             If the response code was not a 2xx.
 	 */
 	protected <T> T get(String uri, Class<T> responseType) throws RuntimeException {
-		String url = "http://" + host + ":" + port + uri;
+		String url = protocol + "://" + host + ":" + port + uri;
 		LOGGER.debug("Submitting a GET request to {}...", url);
 		ResponseEntity<T> response = restTemplate.getForEntity(url, responseType);
 		return response.getBody();
@@ -133,7 +143,7 @@ public abstract class AbstractRestAction implements IExperimentAction {
 		ResponseEntity<String> response;
 
 		try {
-			String url = "http://" + host + ":" + port + uri;
+			String url = protocol + "://" + host + ":" + port + uri;
 			LOGGER.debug("Submitting a POST request to {}...", url);
 			response = restTemplate.postForEntity(url, body, String.class);
 		} catch (HttpStatusCodeException e) {
@@ -157,7 +167,7 @@ public abstract class AbstractRestAction implements IExperimentAction {
 	 *             If the response code was not a 2xx.
 	 */
 	protected <T, S> T post(String uri, Class<T> responseType, S body) throws RuntimeException {
-		String url = "http://" + host + ":" + port + uri;
+		String url = protocol + "://" + host + ":" + port + uri;
 		LOGGER.debug("Submitting a POST request to {}...", url);
 		ResponseEntity<T> response = restTemplate.postForEntity(url, body, responseType);
 
@@ -181,7 +191,7 @@ public abstract class AbstractRestAction implements IExperimentAction {
 	 */
 	@Override
 	public String toString() {
-		return "Request to " + host + ":" + port;
+		return "Request to " + protocol + "://" + host + ":" + port;
 	}
 
 }

@@ -43,6 +43,10 @@ public class SequentialListDataHolder<T> implements IDataHolder<T> {
 
 	@Override
 	public T get() throws AbortInnerException {
+		if (current == null) {
+			LOGGER.warn("[{}] Tried to access a non-existing item! Either nothing has been set or the end has already been reached.", name);
+		}
+
 		return current;
 	}
 
@@ -70,7 +74,7 @@ public class SequentialListDataHolder<T> implements IDataHolder<T> {
 		current = queue.poll();
 
 		if (current == null) {
-			LOGGER.warn("[{}] There is no next item!", name);
+			LOGGER.debug("[{}] Reached the end!", name);
 		}
 	}
 

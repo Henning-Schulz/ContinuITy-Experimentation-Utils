@@ -95,6 +95,10 @@ public class ExperimentProperties {
 		return Boolean.parseBoolean(properties.getProperty("omit-sut-restart", "false"));
 	}
 
+	public boolean omitReferenceTest() {
+		return Boolean.parseBoolean(properties.getProperty("omit-reference-test", "false"));
+	}
+
 	public String getTag() {
 		return tag;
 	}

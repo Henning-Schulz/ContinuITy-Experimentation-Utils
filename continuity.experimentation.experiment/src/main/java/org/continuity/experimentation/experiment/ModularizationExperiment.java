@@ -29,6 +29,7 @@ import org.continuity.experimentation.action.DataBuffer;
 import org.continuity.experimentation.action.DataInvalidation;
 import org.continuity.experimentation.action.Delay;
 import org.continuity.experimentation.action.EmailReport;
+import org.continuity.experimentation.action.LocalFile;
 import org.continuity.experimentation.action.OpenXtrace;
 import org.continuity.experimentation.action.PrometheusDataExporter;
 import org.continuity.experimentation.action.TargetSystem;
@@ -52,6 +53,11 @@ import org.continuity.experimentation.data.StaticDataHolder;
 import org.continuity.experimentation.exception.AbortInnerException;
 
 public class ModularizationExperiment {
+
+	private static final String CONTEXT_INITIAL_UPLOADS = "1-initial-uploads";
+	private static final String CONTEXT_REFERENCE_LOADTEST = "2-reference-load-test";
+	private static final String CONTEXT_SESSION_LOGS_CREATION = "3-session-logs-creation";
+	private static final String CONTEXT_MODULARIZED_LOADTESTS = "4-modularized-load-tests";
 
 	private final ExperimentProperties properties;
 	private final List<TestExecution> testExecutions;
@@ -90,7 +96,7 @@ public class ModularizationExperiment {
 	 * @param builder
 	 */
 	private StableExperimentBuilder appendInitialUploads(StableExperimentBuilder builder) {
-		ContextChange context = new ContextChange("initial-uploads");
+		ContextChange context = new ContextChange(CONTEXT_INITIAL_UPLOADS);
 
 		builder = builder.append(context.append());
 
@@ -107,14 +113,22 @@ public class ModularizationExperiment {
 		SequentialListDataHolder<Path> appHolder = new SequentialListDataHolder<>("idpa-application", appPaths);
 		SequentialListDataHolder<Path> annHolder = new SequentialListDataHolder<>("idpa-annotation", annPaths);
 
+		IDataHolder<String> appTag = new ProcessingDataHolder<>("idpa-app-tag", appHolder, this::extractTagFromIdpaPath);
+		ContextChange appContext = new ContextChange(appTag);
+		IDataHolder<String> annTag = new ProcessingDataHolder<>("idpa-ann-tag", annHolder, this::extractTagFromIdpaPath);
+		ContextChange annContext = new ContextChange(annTag);
+
 		builder = builder.loop(appPaths.size()) //
-				.append(UploadApplicationModel.from(appHolder, new ProcessingDataHolder<>("idpa-app-tag", appHolder, this::extractTagFromIdpaPath)).to(properties.getOrchestratorHost(),
-						properties.getOrchestratorPort(),
-						NoopDataHolder.instance())) //
-				.append(appHolder::next).endLoop().loop(annPaths.size()) //
-				.append(UploadAnnotation.from(annHolder, new ProcessingDataHolder<>("idpa-app-tag", annHolder, this::extractTagFromIdpaPath)).to(properties.getOrchestratorHost(),
-						properties.getOrchestratorPort(), NoopDataHolder.instance())) //
+				.append(appContext.rename()) //
+				.append(UploadApplicationModel.from(appHolder, appTag).to(properties.getOrchestratorHost(), properties.getOrchestratorPort(), NoopDataHolder.instance())) //
+				.append(appHolder::next) //
+				.append(appContext.renameBack()) //
+				.endLoop() //
+				.loop(annPaths.size()) //
+				.append(annContext.rename()) //
+				.append(UploadAnnotation.from(annHolder, annTag).to(properties.getOrchestratorHost(), properties.getOrchestratorPort(), NoopDataHolder.instance())) //
 				.append(annHolder::next) //
+				.append(annContext.renameBack()) //
 				.endLoop();
 
 		builder.append(context.remove());
@@ -136,21 +150,29 @@ public class ModularizationExperiment {
 	 * @throws AbortInnerException
 	 */
 	private StableExperimentBuilder appendReferenceLoadTest(StableExperimentBuilder builder) throws MalformedURLException {
-		ContextChange context = new ContextChange("reference-load-test");
+		ContextChange context = new ContextChange(CONTEXT_REFERENCE_LOADTEST);
 
 		builder = builder.append(context.append()).append(EmailReport.send());
 
-		Order order = createOrder(OrderGoal.EXECUTE_LOAD_TEST);
-		order.getOptions().setNumUsers(properties.getLoadTestNumUsers());
+		IDataHolder<String> traceHolder = new SimpleDataHolder<>("open-xtraces", String.class);
 
-		builder = appendSystemRestart(builder);
-		builder = appendTestExecution(builder, order, referenceTestLinks);
+		Order order;
+
+		if (!properties.omitReferenceTest()) {
+			order = createOrder(OrderGoal.EXECUTE_LOAD_TEST);
+			order.getOptions().setNumUsers(properties.getLoadTestNumUsers());
+
+			builder = appendSystemRestart(builder);
+			builder = appendTestExecution(builder, order, referenceTestLinks) //
+					.append(OpenXtrace.download(properties.getExternalTraceSourceLink(), testStartDate, testEndDate, properties.getDateFormat(), traceHolder));
+		} else {
+			builder = builder.append(LocalFile.read(StaticDataHolder.of(Paths.get("reference-traces.json")), traceHolder));
+			testEndDate.set(new Date()); // Will be used as data timestamp
+		}
 
 		builder = builder.append(context.remove());
-		context = new ContextChange("session-logs-creation");
+		context = new ContextChange(CONTEXT_SESSION_LOGS_CREATION);
 		builder = builder.append(context.append());
-
-		IDataHolder<String> traceHolder = new SimpleDataHolder<>("open-xtraces", String.class);
 
 		IDataHolder<LinkExchangeModel> sessionLogsSource = new ProcessingDataHolder<>("session-logs-source", referenceTracesLink, link -> {
 			LinkExchangeModel source = new LinkExchangeModel();
@@ -168,8 +190,7 @@ public class ModularizationExperiment {
 		IDataHolder<OrderResponse> orderResponse = new SimpleDataHolder<>("session-logs-creation-order-response", OrderResponse.class);
 		order = createOrder(OrderGoal.CREATE_SESSION_LOGS);
 
-		builder = builder.append(OpenXtrace.download(properties.getExternalTraceSourceLink(), testStartDate, testEndDate, properties.getDateFormat(), traceHolder)) //
-				.append(DataBuffer.upload(properties.getOrchestratorSatelliteHost(), traceHolder, referenceTracesLink)) //
+		builder = builder.append(DataBuffer.upload(properties.getOrchestratorSatelliteHost(), traceHolder, referenceTracesLink)) //
 				.append(new DataInvalidation(traceHolder)) //
 				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), order, orderResponse, sessionLogsSource)) //
 				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), StaticDataHolder.of(order), orderResponse, referenceExecutionReport,
@@ -186,8 +207,8 @@ public class ModularizationExperiment {
 	 * @param builder
 	 */
 	private StableExperimentBuilder appendModularizedTests(StableExperimentBuilder builder) {
-		ContextChange context = new ContextChange("modularized-load-tests");
-		builder = builder.append(context.append()).append(EmailReport.send());
+		ContextChange context = new ContextChange(CONTEXT_MODULARIZED_LOADTESTS);
+		builder = builder.append(context.append());
 
 		final SequentialListDataHolder<TestExecution> testExecutionsHolder = new SequentialListDataHolder<>("test-execution", testExecutions);
 		IDataHolder<Order> orderHolder = new SimpleDataHolder<>("load-test-creation-order", Order.class);
@@ -195,9 +216,11 @@ public class ModularizationExperiment {
 		IDataHolder<String> innerContextHolder = new ProcessingDataHolder<>("modularized-test-execution-context", testExecutionsHolder, TestExecution::toContext);
 		IDataHolder<LinkExchangeModel> createdTestLinks = new ProcessingDataHolder<>("created-test-links", orderReport, OrderReport::getInternalArtifacts);
 		ContextChange innerContext = new ContextChange(innerContextHolder);
+		ContextChange creationContext = new ContextChange("load-test-creation");
+		ContextChange executionContext = new ContextChange("load-test-creation");
 
 		ConcurrentBuilder<LoopBuilder<StableExperimentBuilder>> threadBuilder = builder.loop(testExecutions.size()) //
-				.append(innerContext.renameCurrent()) //
+				.append(innerContext.rename()).append(EmailReport.send()) //
 				.newThread().append(ctxt -> initLoadTestCreationOrder(testExecutionsHolder, orderHolder)) //
 				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse)) //
 				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse, orderReport, properties.getOrderReportTimeout())) //
@@ -208,8 +231,9 @@ public class ModularizationExperiment {
 				.append(new DataInvalidation(testStartDate, testEndDate));
 
 		builder = appendTestExecution(loopBuilder, createOrder(OrderGoal.EXECUTE_LOAD_TEST), createdTestLinks) //
-				.append(testExecutionsHolder::next).append(new DataInvalidation(orderHolder, orderResponse, orderReport)) //
-				.append(innerContext.remove()) //
+				.append(new DataInvalidation(orderHolder, orderResponse, orderReport)) //
+				.append(innerContext.renameBack()) //
+				.append(testExecutionsHolder::next) //
 				.endLoop();
 
 		builder.append(context.remove());
@@ -278,8 +302,7 @@ public class ModularizationExperiment {
 	private <B extends ExperimentBuilder<B, C>, C> B appendSystemRestart(B builder) {
 		if (!properties.omitSutRestart()) {
 			return builder.append(TargetSystem.restart(Application.SOCK_SHOP, properties.getSutSatelliteHost())) //
-					.append(new Delay(300000))
-					.append(TargetSystem.waitFor(Application.SOCK_SHOP, properties.getTargetServerHost(), properties.getTargetServerPort(), 1800000))
+					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.SOCK_SHOP, properties.getTargetServerHost(), properties.getTargetServerPort(), 1800000))
 					.append(new Delay(properties.getDelayBetweenExecutions()));
 		} else {
 			return builder.append(new Delay(1));
@@ -299,15 +322,19 @@ public class ModularizationExperiment {
 
 		IDataHolder<OrderResponse> orderResponse = new SimpleDataHolder<>("test-execution-order-response", OrderResponse.class);
 
+		ContextChange prometheusContext = new ContextChange("prometheus");
+
 		// TODO: Do we need to subtract an hour from the start and end time?
 		return builder.append(Clock.takeTime(testStartDate)) //
 				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), order, orderResponse, source)) //
 				.append(new Delay(properties.getLoadTestDuration() * 1000)) //
 				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), StaticDataHolder.of(order), orderResponse, orderReport,
 						properties.getOrderReportTimeout())) //
-				.append(Clock.takeTime(testEndDate))
+				.append(Clock.takeTime(testEndDate)) //
+				.append(prometheusContext.append()) //
 				.append(new PrometheusDataExporter(metrics, properties.getPrometheusHost(), properties.getPrometheusPort(), properties.getOrchestratorHost(), properties.getOrchestratorPort(),
 						allServicesToMonitor, properties.getLoadTestDuration())) //
+				.append(prometheusContext.remove()) //
 				.append(new GetJmeterReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderReport));
 	}
 

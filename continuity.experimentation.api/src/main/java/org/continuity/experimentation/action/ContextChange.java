@@ -13,6 +13,8 @@ public class ContextChange {
 
 	private final IDataHolder<String> contextHolder;
 
+	private RenameCurrentContext rename;
+
 	public ContextChange(String context) {
 		this.contextHolder = StaticDataHolder.of(context);
 	}
@@ -29,8 +31,17 @@ public class ContextChange {
 		return new RemoveContext(contextHolder);
 	}
 
-	public RenameCurrentContext renameCurrent() {
-		return new RenameCurrentContext(contextHolder);
+	public RenameCurrentContext rename() {
+		rename = new RenameCurrentContext(contextHolder);
+		return rename;
+	}
+
+	public RenameCurrentContext renameBack() {
+		if (rename == null) {
+			throw new IllegalStateException("rename() needs to be called first!");
+		}
+
+		return rename;
 	}
 
 }

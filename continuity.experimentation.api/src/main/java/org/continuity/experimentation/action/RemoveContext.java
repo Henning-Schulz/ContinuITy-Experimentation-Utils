@@ -31,7 +31,6 @@ public class RemoveContext implements IExperimentAction {
 	@Override
 	public void execute(Context context) throws AbortInnerException {
 		context.remove(this.contextHolder.get());
-		LOGGER.info("Changed context to {} by removing {}.", context, contextHolder.get());
 	}
 
 	/**

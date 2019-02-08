@@ -83,6 +83,7 @@ public class OrderSubmission extends AbstractRestAction {
 		// Overwrite source if source is provided
 		if(source.isSet()) {
 			order.get().setSource(source.get());
+			LOGGER.info("Overwrote source of order '{}' with '{}'.", order, source);
 		}
 		orderResponse.set(post("/order/submit", OrderResponse.class, order.get()));
 

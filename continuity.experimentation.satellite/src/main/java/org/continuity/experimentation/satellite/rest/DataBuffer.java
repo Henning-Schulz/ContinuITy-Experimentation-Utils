@@ -7,6 +7,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +27,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 @RequestMapping(value = "/buffer")
 public class DataBuffer {
 
+	private static final Logger LOGGER = LoggerFactory.getLogger(DataBuffer.class);
+
 	private static final String LINK_PREFIX = "/buffer/data-";
 
 	private final AtomicInteger counter = new AtomicInteger(0);
@@ -34,18 +38,24 @@ public class DataBuffer {
 	@RequestMapping(value = "/upload", method = RequestMethod.POST)
 	public ResponseEntity<String> upload(HttpServletRequest request, @RequestBody String data) {
 		String key = LINK_PREFIX + counter.incrementAndGet();
-		String url = UriComponentsBuilder.fromPath(key).host(request.getRemoteHost()).port(request.getRemotePort()).scheme(request.getScheme()).build().toString();
+		String url = UriComponentsBuilder.fromPath(key).host(request.getServerName()).port(request.getServerPort()).scheme(request.getScheme()).build().toString();
 		storage.put(key, data);
+
+		LOGGER.info("Stored {}.", key);
+
 		return ResponseEntity.created(URI.create(url)).body(key);
 	}
 
 	@RequestMapping(value = "/{id}", method = RequestMethod.GET)
 	public ResponseEntity<String> get(@PathVariable("id") String id) {
-		String data = storage.get(id);
+		String key = "/buffer/" + id;
+		String data = storage.get(key);
 
 		if (data == null) {
+			LOGGER.warn("No data found for key {}", key);
 			return ResponseEntity.notFound().build();
 		} else {
+			LOGGER.info("Returning {}.", key);
 			return ResponseEntity.ok(data);
 		}
 	}

@@ -13,8 +13,14 @@ public class RenameCurrentContext implements IExperimentAction {
 
 	private final IDataHolder<String> contextHolder;
 
-	public RenameCurrentContext(IDataHolder<String> contextHolder) {
-		this.contextHolder = contextHolder;
+	private String from;
+
+	private String to;
+
+	private boolean renameBack = false;
+
+	public RenameCurrentContext(IDataHolder<String> to) {
+		this.contextHolder = to;
 	}
 
 	/**
@@ -24,13 +30,25 @@ public class RenameCurrentContext implements IExperimentAction {
 	 */
 	@Override
 	public void execute(Context context) throws AbortInnerException {
-		String[] contextParts = context.toString().split("\\-");
-		String current = contextParts[contextParts.length - 1];
+		if (!renameBack) {
+			String[] contextParts = context.toString().split("\\" + Context.SEPARATOR);
+			from = contextParts[contextParts.length - 1];
+			to = contextHolder.get();
 
-		context.remove(current);
-		context.append(contextHolder.get());
+			context.remove(from);
+			context.append(to);
 
-		LOGGER.info("Changed context to {} by renaming the last part to {}.", context, contextHolder.get());
+			LOGGER.info("Changed context to {} by renaming the last part to {}.", context, to);
+
+			renameBack = true;
+		} else {
+			context.remove(to);
+			context.append(from);
+
+			LOGGER.info("Changed context to {} by renaming the last part back to {}.", context, from);
+
+			renameBack = false;
+		}
 	}
 
 	/**

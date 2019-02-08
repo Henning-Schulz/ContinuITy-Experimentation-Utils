@@ -119,7 +119,20 @@ public class WaitForOrderReport extends AbstractRestAction {
 			while(null == receivedOrderReport) {
 				LOGGER.info("Waiting for {} millis", timeout);
 				receivedOrderReport = get(url.toURI().getPath() + "?timeout=" + timeout, OrderReport.class);
+
+				if (null == receivedOrderReport) {
+					long sleepTime = timeout / 2;
+					LOGGER.info("Sleeping for {} millis", sleepTime);
+
+					try {
+						Thread.sleep(sleepTime);
+					} catch (InterruptedException e) {
+						LOGGER.error("Interrupted!", e);
+					}
+				}
 			}
+
+			LOGGER.info("Received report for {}", url.toURI().getPath());
 
 			orderReport.set(receivedOrderReport);
 			Path basePath = context.toPath();
@@ -136,14 +149,17 @@ public class WaitForOrderReport extends AbstractRestAction {
 			}
 
 			Path folderPath = context.toPath();
-			storeIfNew(folderPath.resolve("session-logs.txt"), LinkExchangeModel::getSessionLogsLinks, SessionLogsLinks::getLink, sentOrder.get().getSource(), orderReport.get().getCreatedArtifacts());
+			storeIfNew(folderPath.resolve("session-logs.json"), LinkExchangeModel::getSessionLogsLinks, SessionLogsLinks::getLink, sentOrder.get().getSource(),
+					orderReport.get().getCreatedArtifacts());
 			storeIfNew(folderPath.resolve("workload-model.json"), LinkExchangeModel::getWorkloadModelLinks, WorkloadModelLinks::getLink, sentOrder.get().getSource(),
 					orderReport.get().getCreatedArtifacts());
 			storeIfNew(folderPath.resolve("behavior-model.json"), LinkExchangeModel::getWorkloadModelLinks, WorkloadModelLinks::getBehaviorLink, sentOrder.get().getSource(),
 					orderReport.get().getCreatedArtifacts());
-			storeIfNew(folderPath.resolve("load-test.jmx"), LinkExchangeModel::getLoadTestLinks, LoadTestLinks::getLink, sentOrder.get().getSource(), orderReport.get().getCreatedArtifacts());
+			storeIfNew(folderPath.resolve("load-test.json"), LinkExchangeModel::getLoadTestLinks, LoadTestLinks::getLink, sentOrder.get().getSource(), orderReport.get().getCreatedArtifacts());
 			storeIfNew(folderPath.resolve("load-test-report.csv"), LinkExchangeModel::getLoadTestLinks, LoadTestLinks::getReportLink, sentOrder.get().getSource(),
 					orderReport.get().getCreatedArtifacts());
+
+			LOGGER.info("Stored the order results to {}.", folderPath);
 		}
 
 	}
@@ -155,13 +171,13 @@ public class WaitForOrderReport extends AbstractRestAction {
 
 		if ((oldLink == null) && (newLink != null)) {
 			URL url = new URL(newLink);
-			ResponseEntity<String> response = getAsEntity(url.getHost(), url.getPort(), url.getPath() + url.getQuery(), String.class);
+			ResponseEntity<String> response = getAsEntity(url.getHost(), url.getPort(), url.getPath(), String.class);
 
 			if (response.getStatusCode().is2xxSuccessful()) {
 				Files.write(path, response.getBody().getBytes(), StandardOpenOption.CREATE);
 				LOGGER.info("Successfully stored the artifact to {}.", path);
 			} else {
-				LOGGER.warn("Could not download {}: {} - {}", path, response.getStatusCodeValue(), response.getBody());
+				LOGGER.warn("Could not download {}: {} - {}", url.getPath(), response.getStatusCodeValue(), response.getBody());
 			}
 		}
 	}

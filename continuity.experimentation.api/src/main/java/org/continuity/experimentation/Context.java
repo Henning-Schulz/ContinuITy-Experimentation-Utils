@@ -19,6 +19,8 @@ import org.slf4j.LoggerFactory;
  */
 public class Context implements Cloneable {
 
+	public static final String SEPARATOR = "|";
+
 	private static final Logger LOGGER = LoggerFactory.getLogger(Context.class);
 
 	private final Stack<Pair<IExperimentElement, String>> contextStack;
@@ -142,7 +144,7 @@ public class Context implements Cloneable {
 			if (first) {
 				first = false;
 			} else {
-				builder.append("-");
+				builder.append(SEPARATOR);
 			}
 
 			builder.append(element.getRight());
@@ -161,7 +163,9 @@ public class Context implements Cloneable {
 	@SuppressWarnings("unchecked")
 	@Override
 	public Context clone() {
-		return new Context((Stack<Pair<IExperimentElement, String>>) contextStack.clone());
+		Context clone = new Context((Stack<Pair<IExperimentElement, String>>) contextStack.clone());
+		clone.setRootSuffix(rootSuffix);
+		return clone;
 	}
 
 }
