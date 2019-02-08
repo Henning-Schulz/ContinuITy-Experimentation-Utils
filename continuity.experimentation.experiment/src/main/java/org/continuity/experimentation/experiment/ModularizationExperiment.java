@@ -160,9 +160,11 @@ public class ModularizationExperiment {
 			order = createOrder(OrderGoal.EXECUTE_LOAD_TEST);
 			order.getOptions().setNumUsers(properties.getLoadTestNumUsers());
 
-			builder = appendSystemRestart(builder);
-			builder = appendTestExecution(builder, order, referenceTestLinks) //
-					.append(OpenXtrace.download(properties.getExternalTraceSourceLink(), testStartDate, testEndDate, properties.getDateFormat(), traceHolder));
+			ConcurrentBuilder<StableExperimentBuilder> parallelBuilder = builder.newThread();
+			parallelBuilder = appendSystemRestart(parallelBuilder).newThread();
+			builder = appendCmrRestart(parallelBuilder).join();
+
+			builder = appendTestExecution(builder, order, referenceTestLinks, traceHolder);
 		} else {
 			builder = builder.append(LocalFile.read(StaticDataHolder.of(Paths.get("reference-traces.json")), traceHolder));
 			testEndDate.set(new Date()); // Will be used as data timestamp
@@ -203,8 +205,9 @@ public class ModularizationExperiment {
 	 * Executes all modularized load tests.
 	 *
 	 * @param builder
+	 * @throws MalformedURLException
 	 */
-	private StableExperimentBuilder appendModularizedTests(StableExperimentBuilder builder) {
+	private StableExperimentBuilder appendModularizedTests(StableExperimentBuilder builder) throws MalformedURLException {
 		ContextChange context = new ContextChange(CONTEXT_MODULARIZED_LOADTESTS);
 		builder = builder.append(context.append());
 
@@ -223,13 +226,15 @@ public class ModularizationExperiment {
 				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse, orderReport, properties.getOrderReportTimeout())) //
 				.newThread(); //
 
-		LoopBuilder<StableExperimentBuilder> loopBuilder = appendSystemRestart(threadBuilder) //
+		threadBuilder = appendSystemRestart(threadBuilder).newThread();
+
+		LoopBuilder<StableExperimentBuilder> loopBuilder = appendCmrRestart(threadBuilder) //
 				.join() //
 				.append(new DataInvalidation(testStartDate, testEndDate)) //
 				.append(creationContext.remove()) //
 				.append(executionContext.append());
 
-		builder = appendTestExecution(loopBuilder, createOrder(OrderGoal.EXECUTE_LOAD_TEST), orderReport.processing("created-test-links", OrderReport::getInternalArtifacts)) //
+		builder = appendTestExecution(loopBuilder, createOrder(OrderGoal.EXECUTE_LOAD_TEST), orderReport.processing("created-test-links", OrderReport::getInternalArtifacts), NoopDataHolder.instance()) //
 				.append(executionContext.remove()) //
 				.append(new DataInvalidation(orderHolder, orderResponse, orderReport)) //
 				.append(innerContext.renameBack()) //
@@ -305,7 +310,23 @@ public class ModularizationExperiment {
 					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.SOCK_SHOP, properties.getTargetServerHost(), properties.getTargetServerPort(), 1800000))
 					.append(new Delay(properties.getDelayBetweenExecutions()));
 		} else {
-			return builder.append(new Delay(1));
+			return builder;
+		}
+	}
+
+	/**
+	 * Restarts the CMR and waits for the defined delay.
+	 *
+	 * @param builder
+	 * @return
+	 */
+	private <B extends ExperimentBuilder<B, C>, C> B appendCmrRestart(B builder) {
+		if (!properties.omitSutRestart()) {
+			return builder.append(TargetSystem.restart(Application.CMR_DOCKER_SWARM, properties.getOrchestratorSatelliteHost())) //
+					.append(new Delay(300000))
+					.append(new Delay(properties.getDelayBetweenExecutions()));
+		} else {
+			return builder;
 		}
 	}
 
@@ -315,8 +336,9 @@ public class ModularizationExperiment {
 	 * @param builder
 	 * @param order
 	 * @return
+	 * @throws MalformedURLException
 	 */
-	private <B extends ExperimentBuilder<B, C>, C> B appendTestExecution(B builder, Order order, IDataHolder<LinkExchangeModel> source) {
+	private <B extends ExperimentBuilder<B, C>, C> B appendTestExecution(B builder, Order order, IDataHolder<LinkExchangeModel> source, IDataHolder<String> traceHolder) throws MalformedURLException {
 		List<String> metrics = Arrays.asList("request_duration_seconds_count", "process_resident_memory_bytes", "process_cpu_seconds_total", "process_cpu_usage", "jvm_memory_used_bytes");
 		List<String> allServicesToMonitor = Arrays.asList("shipping", "payment", "user", "cart", "orders", "catalogue", "frontend", "jmeter");
 
@@ -334,7 +356,8 @@ public class ModularizationExperiment {
 				.append(prometheusContext.append()) //
 				.append(new PrometheusDataExporter(metrics, properties.getPrometheusHost(), properties.getPrometheusPort(), properties.getOrchestratorHost(), properties.getOrchestratorPort(),
 						allServicesToMonitor, properties.getLoadTestDuration())) //
-				.append(prometheusContext.remove());
+				.append(prometheusContext.remove()) //
+				.append(OpenXtrace.download(properties.getExternalTraceSourceLink(), testStartDate, testEndDate, properties.getDateFormat(), traceHolder));
 	}
 
 	private Order createOrder(OrderGoal goal) {

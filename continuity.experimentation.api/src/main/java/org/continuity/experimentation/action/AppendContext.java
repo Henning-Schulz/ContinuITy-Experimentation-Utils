@@ -4,8 +4,6 @@ import org.continuity.experimentation.Context;
 import org.continuity.experimentation.IExperimentAction;
 import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.exception.AbortInnerException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Appends a context.
@@ -14,8 +12,6 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class AppendContext implements IExperimentAction {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(AppendContext.class);
 
 	private final IDataHolder<String> contextHolder;
 
