@@ -1,12 +1,13 @@
 package org.continuity.experimentation.action.continuity;
 
-import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.function.Function;
 
+import org.continuity.api.entities.artifact.JMeterTestPlanBundle;
+import org.continuity.api.entities.config.LoadTestType;
 import org.continuity.api.entities.config.Order;
 import org.continuity.api.entities.links.LinkExchangeModel;
 import org.continuity.api.entities.links.LoadTestLinks;
@@ -18,6 +19,7 @@ import org.continuity.experimentation.Context;
 import org.continuity.experimentation.action.AbstractRestAction;
 import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.data.NoopDataHolder;
+import org.continuity.experimentation.data.StaticDataHolder;
 import org.continuity.experimentation.exception.AbortException;
 import org.continuity.experimentation.exception.AbortInnerException;
 import org.slf4j.Logger;
@@ -116,7 +118,7 @@ public class WaitForOrderReport extends AbstractRestAction {
 			URL url = new URL(orderResponse.get().getWaitLink());
 			LOGGER.info("Wait for order {} to be finished", orderResponse.get().getWaitLink());
 			OrderReport receivedOrderReport = null;
-			while(null == receivedOrderReport) {
+			while (null == receivedOrderReport) {
 				LOGGER.info("Waiting for {} millis", timeout);
 				receivedOrderReport = get(url.toURI().getPath() + "?timeout=" + timeout, OrderReport.class);
 
@@ -155,37 +157,60 @@ public class WaitForOrderReport extends AbstractRestAction {
 			}
 
 			Path folderPath = context.toPath();
-			storeIfNew(folderPath.resolve("session-logs.json"), LinkExchangeModel::getSessionLogsLinks, SessionLogsLinks::getLink, sentOrder.get().getSource(),
+			storeDefaultIfNew(folderPath.resolve("session-logs.json"), LinkExchangeModel::getSessionLogsLinks, SessionLogsLinks::getLink, sentOrder.get().getSource(),
 					orderReport.get().getCreatedArtifacts());
-			storeIfNew(folderPath.resolve("workload-model.json"), LinkExchangeModel::getWorkloadModelLinks, WorkloadModelLinks::getLink, sentOrder.get().getSource(),
+			storeDefaultIfNew(folderPath.resolve("workload-model.json"), LinkExchangeModel::getWorkloadModelLinks, WorkloadModelLinks::getLink, sentOrder.get().getSource(),
 					orderReport.get().getCreatedArtifacts());
-			storeIfNew(folderPath.resolve("behavior-model.json"), LinkExchangeModel::getWorkloadModelLinks, WorkloadModelLinks::getBehaviorLink, sentOrder.get().getSource(),
+			storeDefaultIfNew(folderPath.resolve("behavior-model.json"), LinkExchangeModel::getWorkloadModelLinks, WorkloadModelLinks::getBehaviorLink, sentOrder.get().getSource(),
 					orderReport.get().getCreatedArtifacts());
-			storeIfNew(folderPath.resolve("load-test.json"), LinkExchangeModel::getLoadTestLinks, LoadTestLinks::getLink, sentOrder.get().getSource(), orderReport.get().getCreatedArtifacts());
-			storeIfNew(folderPath.resolve("load-test-report.csv"), LinkExchangeModel::getLoadTestLinks, LoadTestLinks::getReportLink, sentOrder.get().getSource(),
+			storeDefaultIfNew(folderPath.resolve("load-test-report.csv"), LinkExchangeModel::getLoadTestLinks, LoadTestLinks::getReportLink, sentOrder.get().getSource(),
 					orderReport.get().getCreatedArtifacts());
+
+			if (orderReport.get().getCreatedArtifacts().getLoadTestLinks().getType() == LoadTestType.JMETER) {
+				storeJMeterIfNew(context, sentOrder.get().getSource(), orderReport.get().getCreatedArtifacts());
+			} else {
+				storeDefaultIfNew(folderPath.resolve("load-test.json"), LinkExchangeModel::getLoadTestLinks, LoadTestLinks::getLink, sentOrder.get().getSource(),
+						orderReport.get().getCreatedArtifacts());
+			}
 
 			LOGGER.info("Stored the order results to {}.", folderPath);
 		}
 
 	}
 
-	private <T> void storeIfNew(Path path, Function<LinkExchangeModel, T> firstGetter, Function<T, String> secondGetter, LinkExchangeModel oldModel, LinkExchangeModel newModel)
-			throws IOException {
+	private <T, R> void storeDefaultIfNew(Path path, Function<LinkExchangeModel, T> firstGetter, Function<T, String> secondGetter, LinkExchangeModel oldModel, LinkExchangeModel newModel)
+			throws Exception {
+		storeIfNew(firstGetter, secondGetter, oldModel, newModel, String.class, s -> Files.write(path, s.getBytes(), StandardOpenOption.CREATE));
+	}
+
+	private <T, R> void storeJMeterIfNew(Context context, LinkExchangeModel oldModel, LinkExchangeModel newModel) throws Exception {
+		storeIfNew(LinkExchangeModel::getLoadTestLinks, LoadTestLinks::getLink, oldModel, newModel, JMeterTestPlanBundle.class,
+				bundle -> JMeterTestplan.write(StaticDataHolder.of(bundle)).execute(context));
+	}
+
+	private <T, R> void storeIfNew(Function<LinkExchangeModel, T> firstGetter, Function<T, String> secondGetter, LinkExchangeModel oldModel, LinkExchangeModel newModel, Class<R> responseType,
+			Writer<R> writer) throws Exception {
 		String oldLink = firstGetter.andThen(secondGetter).apply(oldModel);
 		String newLink = firstGetter.andThen(secondGetter).apply(newModel);
 
 		if ((oldLink == null) && (newLink != null)) {
 			URL url = new URL(newLink);
-			ResponseEntity<String> response = getAsEntity(url.getHost(), url.getPort(), url.getPath(), String.class);
+			ResponseEntity<R> response = getAsEntity(url.getHost(), url.getPort(), url.getPath(), responseType);
 
 			if (response.getStatusCode().is2xxSuccessful()) {
-				Files.write(path, response.getBody().getBytes(), StandardOpenOption.CREATE);
-				LOGGER.info("Successfully stored the artifact to {}.", path);
+				writer.write(response.getBody());
+				LOGGER.info("Successfully stored the artifact {}.", newLink);
 			} else {
 				LOGGER.warn("Could not download {}: {} - {}", url.getPath(), response.getStatusCodeValue(), response.getBody());
 			}
 		}
+	}
+
+	@FunctionalInterface
+	private static interface Writer<R> {
+
+		public void write(R entity) throws Exception;
+
 	}
 
 }

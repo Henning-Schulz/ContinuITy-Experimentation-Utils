@@ -16,7 +16,7 @@ public class JMeterTestplanWriter implements IExperimentAction {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JMeterTestplanWriter.class);
 
-	private static final String PREFIX = "wessbas-";
+	private static final String PREFIX = "jmeter-";
 
 	private final TestPlanWriter writer = new TestPlanWriter();
 
