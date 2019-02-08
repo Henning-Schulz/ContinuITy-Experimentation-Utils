@@ -1,5 +1,7 @@
 package org.continuity.experimentation.data;
 
+import java.util.function.Function;
+
 import org.continuity.experimentation.exception.AbortInnerException;
 
 /**
@@ -46,5 +48,18 @@ public interface IDataHolder<T> {
 	 * Invalidates the stored data.
 	 */
 	void invalidate();
+
+	/**
+	 * Creates a {@link ProcessingDataHolder} processing the content of this data holder.
+	 *
+	 * @param name
+	 *            A name for the created data holder.
+	 * @param processor
+	 *            The function processing the content.
+	 * @return The created {@link ProcessingDataHolder}.
+	 */
+	default <S> IDataHolder<S> processing(String name, Function<T, S> processor) {
+		return new ProcessingDataHolder<>(name, this, processor);
+	}
 
 }

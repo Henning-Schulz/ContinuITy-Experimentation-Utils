@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
  *            The type of the input data holder.
  * @param <O>
  *            The output type.
+ *
+ * @see IDataHolder#processing(String, Function)
  */
 public class ProcessingDataHolder<I, O> implements IDataHolder<O> {
 

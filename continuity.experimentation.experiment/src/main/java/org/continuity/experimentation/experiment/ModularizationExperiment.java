@@ -34,7 +34,6 @@ import org.continuity.experimentation.action.OpenXtrace;
 import org.continuity.experimentation.action.PrometheusDataExporter;
 import org.continuity.experimentation.action.TargetSystem;
 import org.continuity.experimentation.action.TargetSystem.Application;
-import org.continuity.experimentation.action.continuity.GetJmeterReport;
 import org.continuity.experimentation.action.continuity.JMeterTestplan;
 import org.continuity.experimentation.action.continuity.OrderSubmission;
 import org.continuity.experimentation.action.continuity.UploadAnnotation;
@@ -46,7 +45,6 @@ import org.continuity.experimentation.builder.LoopBuilder;
 import org.continuity.experimentation.builder.StableExperimentBuilder;
 import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.data.NoopDataHolder;
-import org.continuity.experimentation.data.ProcessingDataHolder;
 import org.continuity.experimentation.data.SequentialListDataHolder;
 import org.continuity.experimentation.data.SimpleDataHolder;
 import org.continuity.experimentation.data.StaticDataHolder;
@@ -113,9 +111,9 @@ public class ModularizationExperiment {
 		SequentialListDataHolder<Path> appHolder = new SequentialListDataHolder<>("idpa-application", appPaths);
 		SequentialListDataHolder<Path> annHolder = new SequentialListDataHolder<>("idpa-annotation", annPaths);
 
-		IDataHolder<String> appTag = new ProcessingDataHolder<>("idpa-app-tag", appHolder, this::extractTagFromIdpaPath);
+		IDataHolder<String> appTag = appHolder.processing("idpa-app-tag", this::extractTagFromIdpaPath);
 		ContextChange appContext = new ContextChange(appTag);
-		IDataHolder<String> annTag = new ProcessingDataHolder<>("idpa-ann-tag", annHolder, this::extractTagFromIdpaPath);
+		IDataHolder<String> annTag = annHolder.processing("idpa-ann-tag", this::extractTagFromIdpaPath);
 		ContextChange annContext = new ContextChange(annTag);
 
 		builder = builder.loop(appPaths.size()) //
@@ -174,7 +172,7 @@ public class ModularizationExperiment {
 		context = new ContextChange(CONTEXT_SESSION_LOGS_CREATION);
 		builder = builder.append(context.append());
 
-		IDataHolder<LinkExchangeModel> sessionLogsSource = new ProcessingDataHolder<>("session-logs-source", referenceTracesLink, link -> {
+		IDataHolder<LinkExchangeModel> sessionLogsSource = referenceTracesLink.processing("session-logs-source", link -> {
 			LinkExchangeModel source = new LinkExchangeModel();
 			source.getMeasurementDataLinks().setLink(link);
 			source.getMeasurementDataLinks().setLinkType(ExternalDataLinkType.OPEN_XTRACE);
@@ -213,14 +211,13 @@ public class ModularizationExperiment {
 		final SequentialListDataHolder<TestExecution> testExecutionsHolder = new SequentialListDataHolder<>("test-execution", testExecutions);
 		IDataHolder<Order> orderHolder = new SimpleDataHolder<>("load-test-creation-order", Order.class);
 		IDataHolder<OrderResponse> orderResponse = new SimpleDataHolder<>("test-creation-order-response", OrderResponse.class);
-		IDataHolder<String> innerContextHolder = new ProcessingDataHolder<>("modularized-test-execution-context", testExecutionsHolder, TestExecution::toContext);
-		IDataHolder<LinkExchangeModel> createdTestLinks = new ProcessingDataHolder<>("created-test-links", orderReport, OrderReport::getInternalArtifacts);
-		ContextChange innerContext = new ContextChange(innerContextHolder);
-		ContextChange creationContext = new ContextChange("load-test-creation");
-		ContextChange executionContext = new ContextChange("load-test-creation");
+		ContextChange innerContext = new ContextChange(testExecutionsHolder.processing("modularized-test-execution-context", TestExecution::toContext));
+		ContextChange creationContext = new ContextChange("test-creation");
+		ContextChange executionContext = new ContextChange("test-execution");
 
 		ConcurrentBuilder<LoopBuilder<StableExperimentBuilder>> threadBuilder = builder.loop(testExecutions.size()) //
 				.append(innerContext.rename()).append(EmailReport.send()) //
+				.append(creationContext.append()) //
 				.newThread().append(ctxt -> initLoadTestCreationOrder(testExecutionsHolder, orderHolder)) //
 				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse)) //
 				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse, orderReport, properties.getOrderReportTimeout())) //
@@ -228,15 +225,18 @@ public class ModularizationExperiment {
 
 		LoopBuilder<StableExperimentBuilder> loopBuilder = appendSystemRestart(threadBuilder) //
 				.join() //
-				.append(new DataInvalidation(testStartDate, testEndDate));
+				.append(new DataInvalidation(testStartDate, testEndDate)) //
+				.append(creationContext.remove()) //
+				.append(executionContext.append());
 
-		builder = appendTestExecution(loopBuilder, createOrder(OrderGoal.EXECUTE_LOAD_TEST), createdTestLinks) //
+		builder = appendTestExecution(loopBuilder, createOrder(OrderGoal.EXECUTE_LOAD_TEST), orderReport.processing("created-test-links", OrderReport::getInternalArtifacts)) //
+				.append(executionContext.remove()) //
 				.append(new DataInvalidation(orderHolder, orderResponse, orderReport)) //
 				.append(innerContext.renameBack()) //
 				.append(testExecutionsHolder::next) //
 				.endLoop();
 
-		builder.append(context.remove());
+		builder.append(context.remove()).append(EmailReport.send());
 
 		return builder;
 	}
@@ -334,8 +334,7 @@ public class ModularizationExperiment {
 				.append(prometheusContext.append()) //
 				.append(new PrometheusDataExporter(metrics, properties.getPrometheusHost(), properties.getPrometheusPort(), properties.getOrchestratorHost(), properties.getOrchestratorPort(),
 						allServicesToMonitor, properties.getLoadTestDuration())) //
-				.append(prometheusContext.remove()) //
-				.append(new GetJmeterReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderReport));
+				.append(prometheusContext.remove());
 	}
 
 	private Order createOrder(OrderGoal goal) {

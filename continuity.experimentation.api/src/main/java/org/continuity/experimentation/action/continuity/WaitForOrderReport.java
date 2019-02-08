@@ -134,6 +134,12 @@ public class WaitForOrderReport extends AbstractRestAction {
 
 			LOGGER.info("Received report for {}", url.toURI().getPath());
 
+			if (receivedOrderReport.isSuccessful()) {
+				LOGGER.info("Order {} was successful.", receivedOrderReport.getOrderId());
+			} else {
+				LOGGER.warn("Order {} was not successful.", receivedOrderReport.getOrderId());
+			}
+
 			orderReport.set(receivedOrderReport);
 			Path basePath = context.toPath();
 			ObjectWriter writer = mapper.writer(new DefaultPrettyPrinter());
