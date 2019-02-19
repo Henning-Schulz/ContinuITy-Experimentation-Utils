@@ -306,8 +306,8 @@ public class ModularizationExperiment {
 	 */
 	private <B extends ExperimentBuilder<B, C>, C> B appendSystemRestart(B builder) {
 		if (!properties.omitSutRestart()) {
-			return builder.append(TargetSystem.restart(Application.SOCK_SHOP, properties.getSutSatelliteHost())) //
-					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.SOCK_SHOP, properties.getTargetServerHost(), properties.getTargetServerPort(), 1800000))
+			return builder.append(TargetSystem.restart(Application.SOCK_SHOP_PINNED, properties.getSutSatelliteHost())) //
+					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.SOCK_SHOP_PINNED, properties.getTargetServerHost(), properties.getTargetServerPort(), 1800000))
 					.append(new Delay(properties.getDelayBetweenExecutions()));
 		} else {
 			return builder;
@@ -323,8 +323,7 @@ public class ModularizationExperiment {
 	private <B extends ExperimentBuilder<B, C>, C> B appendCmrRestart(B builder) {
 		if (!properties.omitSutRestart()) {
 			return builder.append(TargetSystem.restart(Application.CMR_DOCKER_SWARM, properties.getOrchestratorSatelliteHost())) //
-					.append(new Delay(300000))
-					.append(new Delay(properties.getDelayBetweenExecutions()));
+					.append(new Delay(300000)).append(new Delay(properties.getDelayBetweenExecutions()));
 		} else {
 			return builder;
 		}

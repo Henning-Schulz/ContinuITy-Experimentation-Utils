@@ -6,8 +6,10 @@ import java.util.Map;
 public enum KnownApplication {
 
 	DVD_STORE("dvdstore", "sudo service dvdstore restart", "UNDEFINED"), HEAT_CLINIC("heat-clinic", "restartHeatClinic.sh", "checkoutHeatClinicVersion.sh"), CMR("cmr", "sudo service cmr restart",
-			"UNDEFINED"), CMR_DOCKER_SWARM("cmr", "docker service scale monitoring_cmr=0; docker service scale monitoring_cmr=1;",
-					"UNDEFINED"), SOCK_SHOP("sock-shop", "docker stack services -q sock-shop   | while read service; do docker service update --force $service; done;", "UNDEFINED");
+			"UNDEFINED"), CMR_DOCKER_SWARM("cmr-docker", "docker service scale monitoring_cmr=0; docker service scale monitoring_cmr=1;",
+					"UNDEFINED"), SOCK_SHOP("sock-shop", "docker stack services -q sock-shop   | while read service; do docker service update --force $service; done;",
+							"UNDEFINED"), SOCK_SHOP_PINNED("sock-shop-pinned",
+									"docker-compose -f docker-compose.sock-shop.yml kill; docker rm $(docker ps -a -q); docker-compose -f docker-compose.sock-shop.yml up -d", "UNDEFINED");
 
 	private static final Map<String, KnownApplication> APP_PER_KEY = new HashMap<>();
 

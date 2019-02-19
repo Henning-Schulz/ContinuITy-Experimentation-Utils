@@ -232,7 +232,8 @@ public class TargetSystem {
 
 	public static enum Application {
 
-		DVD_STORE("dvdstore", "/dvdstore/home"), HEAT_CLINIC("heat-clinic", "/"), SOCK_SHOP("sock-shop", "/"), CMR("cmr", "/rest/data/agents"), CMR_DOCKER_SWARM("cmr", "/");
+		DVD_STORE("dvdstore", "/dvdstore/home"), HEAT_CLINIC("heat-clinic", "/"), SOCK_SHOP("sock-shop", "/"), SOCK_SHOP_PINNED("sock-shop-pinned", "/"), CMR("cmr",
+				"/rest/data/agents"), CMR_DOCKER_SWARM("cmr-docker", "/");
 
 		private final String name;
 
