@@ -4,7 +4,7 @@ dependencies {
 	compile group: 'com.github.continuity-project', name: 'continuity.idpa', version: '1.3.121'
 
 	compile (group: 'com.github.continuity-project', name: 'continuity.api', version: '1.4.154') {
-		// TODO: Due to broken reference in Maven Central artifact. To be changed when the issue is resolved.
+		// TODO: Due to broken references in Maven Central artifact. To be changed when the issue is resolved.
 		exclude group: 'org.github.continuity-project', module: 'continuity.idpa'
 		exclude group: 'org.github.continuity-project', module: 'continuity.dsl'
 	}
@@ -12,6 +12,11 @@ dependencies {
 	compile (group: 'com.github.continuity-project', name: 'continuity.commons', version: '1.3.121') {
 		// TODO: Due to broken reference in Maven Central artifact. To be changed when the issue is resolved.
 		exclude group: 'org.github.continuity-project', module: 'continuity.idpa'
+	}
+	
+	// TODO: Quick fix. To be replaced with dependencies
+	dependencies {
+    	compile fileTree(dir: 'libs', include: '*.jar')
 	}
 	
 	compile group: 'org.influxdb', name: 'influxdb-java', version: '2.7'

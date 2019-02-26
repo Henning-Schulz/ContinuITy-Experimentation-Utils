@@ -249,6 +249,9 @@ setwd(root.dir)
 
 for (test.combination in list.dirs("4-modularized-load-tests", recursive = FALSE, full.names = FALSE)) {
   go.to.experiment(root.dir, test.combination)
-  print(paste("Analyzing", test.combination))
-  analyze.all()
+  
+  if (file.exists("gen_behavior_model0.csv")) {
+    print(paste("Analyzing", test.combination))
+    analyze.all()
+  }
 }

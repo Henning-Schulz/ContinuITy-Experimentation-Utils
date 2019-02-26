@@ -30,6 +30,7 @@ import org.continuity.experimentation.action.DataInvalidation;
 import org.continuity.experimentation.action.Delay;
 import org.continuity.experimentation.action.EmailReport;
 import org.continuity.experimentation.action.LocalFile;
+import org.continuity.experimentation.action.NoopAction;
 import org.continuity.experimentation.action.OpenXtrace;
 import org.continuity.experimentation.action.PrometheusDataExporter;
 import org.continuity.experimentation.action.TargetSystem;
@@ -266,6 +267,7 @@ public class ModularizationExperiment {
 
 			if (exec.getModularizationApproach() == ModularizationApproach.REQUESTS) {
 				order.setMode(OrderMode.PAST_REQUESTS);
+				order.getOptions().setWorkloadModelType(WorkloadModelType.REQUEST_RATES);
 			}
 		}
 
@@ -314,7 +316,7 @@ public class ModularizationExperiment {
 					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.SOCK_SHOP_PINNED, properties.getTargetServerHost(), properties.getTargetServerPort(), 1800000))
 					.append(new Delay(properties.getDelayBetweenExecutions()));
 		} else {
-			return builder;
+			return builder.append(NoopAction.INSTANCE);
 		}
 	}
 
@@ -329,7 +331,7 @@ public class ModularizationExperiment {
 			return builder.append(TargetSystem.restart(Application.CMR_DOCKER_SWARM, properties.getOrchestratorSatelliteHost())) //
 					.append(new Delay(300000)).append(new Delay(properties.getDelayBetweenExecutions()));
 		} else {
-			return builder;
+			return builder.append(NoopAction.INSTANCE);
 		}
 	}
 
@@ -350,12 +352,14 @@ public class ModularizationExperiment {
 		ContextChange prometheusContext = new ContextChange("prometheus");
 
 		// TODO: Do we need to subtract an hour from the start and end time?
-		return builder.append(Clock.takeTime(testStartDate)) //
+		return builder.append(Clock.takeTime(testStartDate, 0, 2, 0)) // skip the first two minutes
+																		// (warm up)
 				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), order, orderResponse, source)) //
 				.append(new Delay(properties.getLoadTestDuration() * 1000)) //
 				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), StaticDataHolder.of(order), orderResponse, orderReport,
 						properties.getOrderReportTimeout())) //
-				.append(Clock.takeTime(testEndDate)) //
+				.append(Clock.takeTime(testEndDate, 0, -2, 0)) // skip the last two minutes (cool
+																// down)
 				.append(prometheusContext.append()) //
 				.append(new PrometheusDataExporter(metrics, properties.getPrometheusHost(), properties.getPrometheusPort(), properties.getOrchestratorHost(), properties.getOrchestratorPort(),
 						allServicesToMonitor, properties.getLoadTestDuration())) //
