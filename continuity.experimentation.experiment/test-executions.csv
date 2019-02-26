@@ -1,9 +1,13 @@
 non-modularized
-session-logs,shipping
-workload-model,shipping
+requests,catalogue
 session-logs,catalogue
 workload-model,catalogue
+requests,shipping
+session-logs,shipping
+workload-model,shipping
+requests,orders,shipping,payment,user
 session-logs,orders,shipping,payment,user
 workload-model,orders,shipping,payment,user
+requests,catalogue,shipping
 session-logs,catalogue,shipping
 workload-model,catalogue,shipping

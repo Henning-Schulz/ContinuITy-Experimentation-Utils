@@ -28,23 +28,27 @@ expected.steps.per.session <- function(matrix) {
 }
 
 # TODO: Unclear how long to run it
-expected.think.time.per.session <- function(transition.matrix, think.time.matrix, eps = 0.0001) {
-  m <- transition.matrix
-  n <- nrow(m)
-  vector.one <- c(rep(1, n))
-  r <- t(c(1, rep(0, n-1)))
-  m.t <- transition.matrix * think.time.matrix
-  
-  think.time <- 0
-  new.think.time <- 2 * eps
-  
-  while (think.time == 0 || new.think.time / think.time > eps) {
-    r <- r %*% m
-    new.think.time <- r %*% m.t %*% vector.one
-    think.time <- think.time + new.think.time
+expected.think.time.per.session <- function(transition.matrix, think.time.matrix, eps = 0.000001) {
+  if (sum(think.time.matrix) == 0) {
+    0
+  } else {
+    m <- transition.matrix
+    n <- nrow(m)
+    vector.one <- c(rep(1, n))
+    r <- t(c(1, rep(0, n-1)))
+    m.t <- transition.matrix * think.time.matrix
+    
+    think.time <- 0
+    new.think.time <- 2 * eps
+    
+    while (think.time == 0 || new.think.time / think.time > eps) {
+      new.think.time <- r %*% m.t %*% vector.one
+      think.time <- think.time + new.think.time
+      r <- r %*% m
+    }
+    
+    think.time[1,1] # TODO: This is ms, right?
   }
-  
-  think.time[1,1] # TODO: This is ms, right?
 }
 
 # TODO: requests.per.session / session.duration
@@ -81,7 +85,7 @@ read.think.time.mean.matrix <- function(behavior.number) {
   think.time.matrix[] <- sapply(strsplit(think.time.matrix, "; "), `[`, 2)
   think.time.matrix[] <- substring(sapply(strsplit(think.time.matrix, " "), `[`, 1), 6)
   
-  think.time.matrix <- rbind(think.time.matrix, c(rep(0, ncol(think.time.matrix)-1), 1))
+  think.time.matrix <- rbind(think.time.matrix, rep(0, ncol(think.time.matrix)))
   rownames(think.time.matrix)[nrow(think.time.matrix)] <- "$"
   class(think.time.matrix) <- "numeric"
   

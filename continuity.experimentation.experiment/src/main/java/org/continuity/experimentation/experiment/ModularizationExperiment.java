@@ -18,8 +18,8 @@ import org.continuity.api.entities.config.OrderGoal;
 import org.continuity.api.entities.config.OrderMode;
 import org.continuity.api.entities.config.OrderOptions;
 import org.continuity.api.entities.config.WorkloadModelType;
-import org.continuity.api.entities.links.ExternalDataLinkType;
 import org.continuity.api.entities.links.LinkExchangeModel;
+import org.continuity.api.entities.links.MeasurementDataLinkType;
 import org.continuity.api.entities.report.OrderReport;
 import org.continuity.api.entities.report.OrderResponse;
 import org.continuity.experimentation.Experiment;
@@ -177,7 +177,7 @@ public class ModularizationExperiment {
 		IDataHolder<LinkExchangeModel> sessionLogsSource = referenceTracesLink.processing("session-logs-source", link -> {
 			LinkExchangeModel source = new LinkExchangeModel();
 			source.getMeasurementDataLinks().setLink(link);
-			source.getMeasurementDataLinks().setLinkType(ExternalDataLinkType.OPEN_XTRACE);
+			source.getMeasurementDataLinks().setLinkType(MeasurementDataLinkType.OPEN_XTRACE);
 			try {
 				source.getMeasurementDataLinks().setTimestamp(testEndDate.get());
 			} catch (AbortInnerException e) {
@@ -263,15 +263,19 @@ public class ModularizationExperiment {
 			modularizationOptions.setModularizationApproach(exec.getModularizationApproach());
 			modularizationOptions.setServices(createServicesUnderTest(exec.getServicesUnderTest()));
 			order.setModularizationOptions(modularizationOptions);
+
+			if (exec.getModularizationApproach() == ModularizationApproach.REQUESTS) {
+				order.setMode(OrderMode.PAST_REQUESTS);
+			}
 		}
 
 		LinkExchangeModel linkExchangeModel = new LinkExchangeModel();
 
 		linkExchangeModel.getMeasurementDataLinks().setLink(referenceTracesLink.get());
-		linkExchangeModel.getMeasurementDataLinks().setLinkType(ExternalDataLinkType.OPEN_XTRACE);
+		linkExchangeModel.getMeasurementDataLinks().setLinkType(MeasurementDataLinkType.OPEN_XTRACE);
 		linkExchangeModel.getMeasurementDataLinks().setTimestamp(testEndDate.get());
 
-		if (exec.getModularizationApproach() != ModularizationApproach.SESSION_LOGS) {
+		if (exec.getModularizationApproach() == ModularizationApproach.WORKLOAD_MODEL) {
 			// Already created session logs can be reused
 			linkExchangeModel.getSessionLogsLinks().setLink(referenceExecutionReport.get().getInternalArtifacts().getSessionLogsLinks().getLink());
 		}
