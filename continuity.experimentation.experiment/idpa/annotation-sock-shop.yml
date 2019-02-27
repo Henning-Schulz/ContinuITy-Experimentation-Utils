@@ -1,7 +1,7 @@
 # Note that the !<direct> etc. tags were replaced by "@type": direct.
 # This is because JSON schemata do not support YAML tags properly.
 overrides:
-- HttpEndpoint.domain: 172.17.0.1
+- HttpEndpoint.domain: rx600s6-6.fsoc.hpi.uni-potsdam.de
 - HttpEndpoint.port: 80
 inputs:
 - !<direct>

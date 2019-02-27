@@ -43,15 +43,15 @@ public class Clock implements IExperimentAction {
 		Date date = new Date();
 
 		if (hourOffset != 0) {
-			DateUtils.addHours(date, hourOffset);
+			date = DateUtils.addHours(date, hourOffset);
 		}
 
 		if (minuteOffset != 0) {
-			DateUtils.addMinutes(date, minuteOffset);
+			date = DateUtils.addMinutes(date, minuteOffset);
 		}
 
 		if (secondOffset != 0) {
-			DateUtils.addSeconds(date, secondOffset);
+			date = DateUtils.addSeconds(date, secondOffset);
 		}
 
 		dateOutput.set(date);

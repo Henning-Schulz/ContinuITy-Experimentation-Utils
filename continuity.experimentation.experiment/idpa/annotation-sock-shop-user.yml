@@ -1,5 +1,7 @@
 ---
-overrides: []
+overrides:
+- HttpEndpoint.domain: rx600s6-6.fsoc.hpi.uni-potsdam.de
+- HttpEndpoint.port: 9006
 inputs:
 - !<direct>
   &Input_userGetCustomerUsingGET_id_URL_PART data:

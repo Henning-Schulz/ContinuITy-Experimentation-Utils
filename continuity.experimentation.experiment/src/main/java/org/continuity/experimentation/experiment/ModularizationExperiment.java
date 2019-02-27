@@ -328,8 +328,9 @@ public class ModularizationExperiment {
 	 */
 	private <B extends ExperimentBuilder<B, C>, C> B appendCmrRestart(B builder) {
 		if (!properties.omitSutRestart()) {
-			return builder.append(TargetSystem.restart(Application.CMR_DOCKER_SWARM, properties.getOrchestratorSatelliteHost())) //
-					.append(new Delay(300000)).append(new Delay(properties.getDelayBetweenExecutions()));
+			return builder.append(TargetSystem.restart(Application.CMR_PROMETHEUS, properties.getOrchestratorSatelliteHost())) //
+					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.CMR_PROMETHEUS, properties.getOrchestratorHost(), "8182", 1800000))
+					.append(new Delay(properties.getDelayBetweenExecutions()));
 		} else {
 			return builder.append(NoopAction.INSTANCE);
 		}
@@ -351,14 +352,15 @@ public class ModularizationExperiment {
 
 		ContextChange prometheusContext = new ContextChange("prometheus");
 
-		// TODO: Do we need to subtract an hour from the start and end time?
-		return builder.append(Clock.takeTime(testStartDate, 0, 2, 0)) // skip the first two minutes
+		// We need to subtract an hour from the start and end time due to different clock of Docker
+		// containers
+		return builder.append(Clock.takeTime(testStartDate, -1, 2, 0)) // skip the first two minutes
 																		// (warm up)
 				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), order, orderResponse, source)) //
 				.append(new Delay(properties.getLoadTestDuration() * 1000)) //
 				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), StaticDataHolder.of(order), orderResponse, orderReport,
 						properties.getOrderReportTimeout())) //
-				.append(Clock.takeTime(testEndDate, 0, -2, 0)) // skip the last two minutes (cool
+				.append(Clock.takeTime(testEndDate, -1, -2, 0)) // skip the last two minutes (cool
 																// down)
 				.append(prometheusContext.append()) //
 				.append(new PrometheusDataExporter(metrics, properties.getPrometheusHost(), properties.getPrometheusPort(), properties.getOrchestratorHost(), properties.getOrchestratorPort(),
