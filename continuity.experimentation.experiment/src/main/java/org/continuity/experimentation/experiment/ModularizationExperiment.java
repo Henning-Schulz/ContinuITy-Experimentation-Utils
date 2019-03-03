@@ -161,9 +161,8 @@ public class ModularizationExperiment {
 			order = createOrder(OrderGoal.EXECUTE_LOAD_TEST);
 			order.getOptions().setNumUsers(properties.getLoadTestNumUsers());
 
-			ConcurrentBuilder<StableExperimentBuilder> parallelBuilder = builder.newThread();
-			parallelBuilder = appendSystemRestart(parallelBuilder).newThread();
-			builder = appendCmrRestart(parallelBuilder).join();
+			builder = appendCmrRestart(builder);
+			builder = appendSystemRestart(builder);
 
 			builder = appendTestExecution(builder, order, referenceTestLinks, traceHolder);
 		} else {
@@ -227,9 +226,9 @@ public class ModularizationExperiment {
 				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse, orderReport, properties.getOrderReportTimeout())) //
 				.newThread(); //
 
-		threadBuilder = appendSystemRestart(threadBuilder).newThread();
+		threadBuilder = appendCmrRestart(threadBuilder);
 
-		LoopBuilder<StableExperimentBuilder> loopBuilder = appendCmrRestart(threadBuilder) //
+		LoopBuilder<StableExperimentBuilder> loopBuilder = appendSystemRestart(threadBuilder) //
 				.join() //
 				.append(new DataInvalidation(testStartDate, testEndDate)) //
 				.append(creationContext.remove()) //
@@ -329,8 +328,7 @@ public class ModularizationExperiment {
 	private <B extends ExperimentBuilder<B, C>, C> B appendCmrRestart(B builder) {
 		if (!properties.omitSutRestart()) {
 			return builder.append(TargetSystem.restart(Application.CMR_PROMETHEUS, properties.getOrchestratorSatelliteHost())) //
-					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.CMR_PROMETHEUS, properties.getOrchestratorHost(), "8182", 1800000))
-					.append(new Delay(properties.getDelayBetweenExecutions()));
+					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.CMR_PROMETHEUS, properties.getOrchestratorHost(), "8182", 1800000));
 		} else {
 			return builder.append(NoopAction.INSTANCE);
 		}
