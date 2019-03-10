@@ -6,14 +6,19 @@ import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 import org.continuity.experimentation.Context;
+import org.continuity.experimentation.IExperimentAction;
 import org.continuity.experimentation.data.IDataHolder;
 import org.continuity.experimentation.exception.AbortException;
 import org.continuity.experimentation.exception.AbortInnerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.spec.research.open.xtrace.api.core.Trace;
+
+import open.xtrace.OPENxtraceUtils;
 
 public class OpenXtrace {
 
@@ -30,6 +35,10 @@ public class OpenXtrace {
 		String protocol = url.getProtocol() == null ? "http" : url.getProtocol();
 
 		return new Downloader(protocol, url.getHost(), Integer.toString(port), url.getPath(), startDate, endDate, dateFormat, traceHolder);
+	}
+
+	public static Deserializer deserialize(IDataHolder<String> input, IDataHolder<List<Trace>> output) {
+		return new Deserializer(input, output);
 	}
 
 	public static class Downloader extends AbstractRestAction {
@@ -63,6 +72,28 @@ public class OpenXtrace {
 			FileUtils.writeStringToFile(context.toPath().resolve("open-xtraces.json").toFile(), traces, Charset.defaultCharset());
 
 			LOGGER.info("Stored OPEN.xtraces to {}.", context.toPath().resolve("open-xtraces.json").toString());
+		}
+
+	}
+
+	public static class Deserializer implements IExperimentAction {
+
+		private static final Logger LOGGER = LoggerFactory.getLogger(OpenXtrace.Deserializer.class);
+
+		private final IDataHolder<String> input;
+		private final IDataHolder<List<Trace>> output;
+
+		private Deserializer(IDataHolder<String> input, IDataHolder<List<Trace>> output) {
+			this.input = input;
+			this.output = output;
+		}
+
+		@Override
+		public void execute(Context context) throws AbortInnerException, AbortException, Exception {
+			LOGGER.info("Deserializing OPEN.xtraces {} into {}.", input, output);
+
+			List<Trace> traces = OPENxtraceUtils.deserializeIntoTraceList(input.get());
+			output.set(traces);
 		}
 
 	}

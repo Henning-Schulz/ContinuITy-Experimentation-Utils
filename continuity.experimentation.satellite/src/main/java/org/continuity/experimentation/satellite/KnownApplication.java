@@ -10,7 +10,9 @@ public enum KnownApplication {
 					"UNDEFINED"), CMR_PROMETHEUS("cmr-prometheus", "docker-compose -f docker-compose.monitoring.yml kill; docker-compose -f docker-compose.monitoring.yml up -d",
 							"UNDEFINED"), SOCK_SHOP("sock-shop", "docker stack services -q sock-shop   | while read service; do docker service update --force $service; done;",
 							"UNDEFINED"), SOCK_SHOP_PINNED("sock-shop-pinned",
-									"docker-compose -f docker-compose.sock-shop.yml kill; docker rm $(docker ps -a -q); docker-compose -f docker-compose.sock-shop.yml up -d", "UNDEFINED");
+											"docker-compose -f docker-compose.sock-shop.yml kill; docker rm $(docker ps -a -q); docker volume prune -f; docker-compose -f docker-compose.sock-shop.yml up -d",
+											"UNDEFINED"), CONTINUITY_JMETER("continuity-jmeter", "docker stop $(docker ps -aq -f name=jmeter); docker start $(docker ps -aq -f name=jmeter)",
+													"UNDEFINED");
 
 	private static final Map<String, KnownApplication> APP_PER_KEY = new HashMap<>();
 

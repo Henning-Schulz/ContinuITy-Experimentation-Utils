@@ -57,6 +57,7 @@ public class ModularizationExperiment {
 	private static final String CONTEXT_REFERENCE_LOADTEST = "2-reference-load-test";
 	private static final String CONTEXT_SESSION_LOGS_CREATION = "3-session-logs-creation";
 	private static final String CONTEXT_MODULARIZED_LOADTESTS = "4-modularized-load-tests";
+	private static final String CONTEXT_NON_MODULARIZED_SESSION_LOGS = "5-non-modularized-session-logs";
 
 	private final ExperimentProperties properties;
 	private final List<TestExecution> testExecutions;
@@ -85,6 +86,8 @@ public class ModularizationExperiment {
 		builder = appendInitialUploads(builder);
 		builder = appendReferenceLoadTest(builder);
 		builder = appendModularizedTests(builder);
+		builder = appendNonModularizedSessionLogsCreation(builder);
+		builder = builder.append(EmailReport.send());
 
 		return builder.build();
 	}
@@ -161,8 +164,14 @@ public class ModularizationExperiment {
 			order = createOrder(OrderGoal.EXECUTE_LOAD_TEST);
 			order.getOptions().setNumUsers(properties.getLoadTestNumUsers());
 
-			builder = appendCmrRestart(builder);
-			builder = appendSystemRestart(builder);
+			ConcurrentBuilder<StableExperimentBuilder> threadBuilder = builder.newThread();
+
+			threadBuilder = appendCmrRestart(threadBuilder);
+			threadBuilder = appendSystemRestart(threadBuilder);
+
+			threadBuilder = threadBuilder.newThread();
+
+			builder = appendJMeterRestart(threadBuilder).join();
 
 			builder = appendTestExecution(builder, order, referenceTestLinks, traceHolder);
 		} else {
@@ -227,8 +236,11 @@ public class ModularizationExperiment {
 				.newThread(); //
 
 		threadBuilder = appendCmrRestart(threadBuilder);
+		threadBuilder = appendSystemRestart(threadBuilder);
 
-		LoopBuilder<StableExperimentBuilder> loopBuilder = appendSystemRestart(threadBuilder) //
+		threadBuilder = threadBuilder.newThread();
+
+		LoopBuilder<StableExperimentBuilder> loopBuilder = appendJMeterRestart(threadBuilder) //
 				.join() //
 				.append(new DataInvalidation(testStartDate, testEndDate)) //
 				.append(creationContext.remove()) //
@@ -241,7 +253,7 @@ public class ModularizationExperiment {
 				.append(testExecutionsHolder::next) //
 				.endLoop();
 
-		builder.append(context.remove()).append(EmailReport.send());
+		builder = builder.append(context.remove());
 
 		return builder;
 	}
@@ -328,7 +340,23 @@ public class ModularizationExperiment {
 	private <B extends ExperimentBuilder<B, C>, C> B appendCmrRestart(B builder) {
 		if (!properties.omitSutRestart()) {
 			return builder.append(TargetSystem.restart(Application.CMR_PROMETHEUS, properties.getOrchestratorSatelliteHost())) //
-					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.CMR_PROMETHEUS, properties.getOrchestratorHost(), "8182", 1800000));
+					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.CMR_PROMETHEUS, properties.getOrchestratorHost(), "8182", 1800000)).append(new Delay(120000));
+		} else {
+			return builder.append(NoopAction.INSTANCE);
+		}
+	}
+
+	/**
+	 * Restarts the continuity.jmeter service and waits for the defined delay.
+	 *
+	 * @param builder
+	 * @return
+	 */
+	private <B extends ExperimentBuilder<B, C>, C> B appendJMeterRestart(B builder) {
+		if (!properties.omitSutRestart()) {
+			return builder.append(TargetSystem.restart(Application.CONTINUITY_JMETER, properties.getOrchestratorSatelliteHost())) //
+					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.CONTINUITY_JMETER, properties.getOrchestratorHost(), "8083", 1800000))
+					.append(new Delay(properties.getDelayBetweenExecutions()));
 		} else {
 			return builder.append(NoopAction.INSTANCE);
 		}
@@ -382,6 +410,59 @@ public class ModularizationExperiment {
 		order.setOptions(orderOptions);
 
 		return order;
+	}
+
+	private StableExperimentBuilder appendNonModularizedSessionLogsCreation(StableExperimentBuilder builder) {
+		ContextChange context = new ContextChange(CONTEXT_NON_MODULARIZED_SESSION_LOGS);
+
+		builder = builder.append(context.append()).append(EmailReport.send());
+
+		IDataHolder<Path> pathHolder = new SimpleDataHolder<>("non-modularized-open-xtraces-path", Path.class);
+		IDataHolder<String> traceHolder = new SimpleDataHolder<>("non-modularized-open-xtraces", String.class);
+		IDataHolder<String> traceLinkHolder = new SimpleDataHolder<>("non-modularized-open-xtraces-link", String.class);
+
+		IDataHolder<LinkExchangeModel> sessionLogsSource = traceLinkHolder.processing("non-modularized-session-logs-source", link -> {
+			LinkExchangeModel source = new LinkExchangeModel();
+			source.getMeasurementDataLinks().setLink(link);
+			source.getMeasurementDataLinks().setLinkType(MeasurementDataLinkType.OPEN_XTRACE);
+			source.getMeasurementDataLinks().setTimestamp(new Date());
+			return source;
+		});
+
+		List<TestExecution> serviceCombinations = testExecutions.stream().filter(exec -> exec.getModularizationApproach() != null).map(TestExecution::getServicesUnderTest).distinct()
+				.map(l -> new TestExecution(ModularizationApproach.SESSION_LOGS, l.toArray(new String[] {}))).collect(Collectors.toList());
+
+		SequentialListDataHolder<TestExecution> serviceCombinationHolder = new SequentialListDataHolder<>("service-combinations", serviceCombinations);
+		ContextChange serviceCombinationContext = new ContextChange(
+				serviceCombinationHolder.processing("service-combination-context", exec -> exec.getServicesUnderTest().stream().collect(Collectors.joining("-"))));
+		IDataHolder<Order> orderHolder = new SimpleDataHolder<>("non-modularized-session-logs-order", Order.class);
+
+		IDataHolder<OrderResponse> orderResponse = new SimpleDataHolder<>("non-modularized-session-logs-creation-order-response", OrderResponse.class);
+
+		builder = builder.append(ctxt -> {
+			Path traceFile = ctxt.toPath().resolve(CONTEXT_MODULARIZED_LOADTESTS).resolve("non-modularized").resolve("test-execution").resolve("open-xtraces.json");
+			pathHolder.set(traceFile);
+		}) //
+				.append(LocalFile.read(pathHolder, traceHolder)) //
+				.append(DataBuffer.upload(properties.getOrchestratorSatelliteHost(), traceHolder, traceLinkHolder)) //
+
+				.loop(serviceCombinations.size()) //
+				.append(serviceCombinationContext.rename()) //
+				.append(ctxt -> {
+					initLoadTestCreationOrder(serviceCombinationHolder, orderHolder);
+					orderHolder.get().setGoal(OrderGoal.CREATE_SESSION_LOGS);
+				}) //
+				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse, sessionLogsSource)) //
+				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse, NoopDataHolder.instance(),
+						properties.getOrderReportTimeout())) //
+				.append(serviceCombinationContext.renameBack()) //
+				.append(serviceCombinationHolder::next) //
+				.append(new DataInvalidation(orderHolder, orderResponse)) //
+				.endLoop();
+
+		builder = builder.append(context.remove());
+
+		return builder;
 	}
 
 }

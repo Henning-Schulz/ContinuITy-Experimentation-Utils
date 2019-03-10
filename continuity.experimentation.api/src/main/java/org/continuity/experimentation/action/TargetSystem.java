@@ -233,7 +233,7 @@ public class TargetSystem {
 	public static enum Application {
 
 		DVD_STORE("dvdstore", "/dvdstore/home"), HEAT_CLINIC("heat-clinic", "/"), SOCK_SHOP("sock-shop", "/"), SOCK_SHOP_PINNED("sock-shop-pinned", "/"), CMR("cmr",
-				"/rest/data/agents"), CMR_DOCKER_SWARM("cmr-docker", "/"), CMR_PROMETHEUS("cmr-prometheus", "/rest/data/agents");
+				"/rest/data/agents"), CMR_DOCKER_SWARM("cmr-docker", "/"), CMR_PROMETHEUS("cmr-prometheus", "/rest/data/agents"), CONTINUITY_JMETER("continuity-jmeter", "/available/");
 
 		private final String name;
 
