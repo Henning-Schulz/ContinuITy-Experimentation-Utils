@@ -63,6 +63,7 @@ public class ModularizationExperiment {
 	private final List<TestExecution> testExecutions;
 	private final Experiment experiment;
 
+	private IDataHolder<LinkExchangeModel> initTestLinks = new SimpleDataHolder<>("init-test-links", LinkExchangeModel.class);
 	private IDataHolder<LinkExchangeModel> referenceTestLinks = new SimpleDataHolder<>("reference-test-links", LinkExchangeModel.class);
 	private IDataHolder<Date> testStartDate = new SimpleDataHolder<>("test-start-date", Date.class);
 	private IDataHolder<Date> testEndDate = new SimpleDataHolder<>("test-end-date", Date.class);
@@ -103,6 +104,9 @@ public class ModularizationExperiment {
 		builder = builder.append(context.append());
 
 		IDataHolder<JMeterTestPlanBundle> testPlanBundle = new SimpleDataHolder<>("JmeterTestplanBundle", JMeterTestPlanBundle.class);
+
+		builder = builder.append(JMeterTestplan.read(StaticDataHolder.of(Paths.get(properties.getInitLoadTestFilePath())), testPlanBundle))
+				.append(JMeterTestplan.upload(properties.getOrchestratorHost(), properties.getOrchestratorPort(), testPlanBundle, StaticDataHolder.of(properties.getTag()), initTestLinks));
 
 		builder = builder.append(JMeterTestplan.read(StaticDataHolder.of(Paths.get(properties.getReferenceLoadTestFilePath())), testPlanBundle))
 				.append(JMeterTestplan.upload(properties.getOrchestratorHost(), properties.getOrchestratorPort(), testPlanBundle, StaticDataHolder.of(properties.getTag()), referenceTestLinks));
@@ -173,6 +177,7 @@ public class ModularizationExperiment {
 
 			builder = appendJMeterRestart(threadBuilder).join();
 
+			builder = appendInitTestExecution(builder);
 			builder = appendTestExecution(builder, order, referenceTestLinks, traceHolder);
 		} else {
 			builder = builder.append(LocalFile.read(StaticDataHolder.of(Paths.get("reference-traces.json")), traceHolder));
@@ -245,6 +250,8 @@ public class ModularizationExperiment {
 				.append(new DataInvalidation(testStartDate, testEndDate)) //
 				.append(creationContext.remove()) //
 				.append(executionContext.append());
+
+		loopBuilder = appendInitTestExecution(loopBuilder);
 
 		builder = appendTestExecution(loopBuilder, createOrder(OrderGoal.EXECUTE_LOAD_TEST), orderReport.processing("created-test-links", OrderReport::getInternalArtifacts), NoopDataHolder.instance()) //
 				.append(executionContext.remove()) //
@@ -360,6 +367,22 @@ public class ModularizationExperiment {
 		} else {
 			return builder.append(NoopAction.INSTANCE);
 		}
+	}
+
+	/**
+	 * Executes the initializing load testing creating the users.
+	 *
+	 * @param builder
+	 * @return
+	 * @throws MalformedURLException
+	 */
+	private <B extends ExperimentBuilder<B, C>, C> B appendInitTestExecution(B builder) throws MalformedURLException {
+		IDataHolder<String> traceHolder = new SimpleDataHolder<>("init-open-xtraces", String.class);
+		ContextChange context = new ContextChange("init-test");
+
+		builder = builder.append(context.append());
+		builder = appendTestExecution(builder, createOrder(OrderGoal.EXECUTE_LOAD_TEST), initTestLinks, traceHolder);
+		return builder.append(context.remove());
 	}
 
 	/**

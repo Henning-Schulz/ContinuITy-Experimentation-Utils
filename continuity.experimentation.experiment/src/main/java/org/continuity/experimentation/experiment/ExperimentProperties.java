@@ -43,6 +43,10 @@ public class ExperimentProperties {
 		return properties.getProperty("orchestrator-port", "80");
 	}
 
+	public String getInitLoadTestFilePath() {
+		return properties.getProperty("init-load-test-file-path", "init-testplan");
+	}
+
 	public String getReferenceLoadTestFilePath() {
 		return properties.getProperty("reference-load-test-file-path", "sock-shop-testplan");
 	}
