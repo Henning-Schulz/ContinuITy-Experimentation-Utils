@@ -166,7 +166,7 @@ public class ModularizationExperiment {
 
 			ConcurrentBuilder<StableExperimentBuilder> threadBuilder = builder.newThread();
 
-			threadBuilder = appendCmrRestart(threadBuilder);
+			threadBuilder = appendMonitoringRestart(threadBuilder);
 			threadBuilder = appendSystemRestart(threadBuilder);
 
 			threadBuilder = threadBuilder.newThread();
@@ -235,7 +235,7 @@ public class ModularizationExperiment {
 				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse, orderReport, properties.getOrderReportTimeout())) //
 				.newThread(); //
 
-		threadBuilder = appendCmrRestart(threadBuilder);
+		threadBuilder = appendMonitoringRestart(threadBuilder);
 		threadBuilder = appendSystemRestart(threadBuilder);
 
 		threadBuilder = threadBuilder.newThread();
@@ -337,10 +337,10 @@ public class ModularizationExperiment {
 	 * @param builder
 	 * @return
 	 */
-	private <B extends ExperimentBuilder<B, C>, C> B appendCmrRestart(B builder) {
+	private <B extends ExperimentBuilder<B, C>, C> B appendMonitoringRestart(B builder) {
 		if (!properties.omitSutRestart()) {
-			return builder.append(TargetSystem.restart(Application.CMR_PROMETHEUS, properties.getOrchestratorSatelliteHost())) //
-					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.CMR_PROMETHEUS, properties.getOrchestratorHost(), "8182", 1800000)).append(new Delay(120000));
+			return builder.append(TargetSystem.restart(Application.MONITORING, properties.getOrchestratorSatelliteHost())) //
+					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.MONITORING, properties.getOrchestratorHost(), "8182", 1800000)).append(new Delay(120000));
 		} else {
 			return builder.append(NoopAction.INSTANCE);
 		}
