@@ -347,7 +347,7 @@ public class ModularizationExperiment {
 	private <B extends ExperimentBuilder<B, C>, C> B appendMonitoringRestart(B builder) {
 		if (!properties.omitSutRestart()) {
 			return builder.append(TargetSystem.restart(Application.MONITORING, properties.getOrchestratorSatelliteHost())) //
-					.append(new Delay(300000)).append(TargetSystem.waitFor(Application.MONITORING, properties.getOrchestratorHost(), "8182", 1800000)).append(new Delay(120000));
+					.append(new Delay(60000)).append(TargetSystem.waitFor(Application.MONITORING, properties.getOrchestratorHost(), "9411", 1800000)).append(new Delay(120000));
 		} else {
 			return builder.append(NoopAction.INSTANCE);
 		}

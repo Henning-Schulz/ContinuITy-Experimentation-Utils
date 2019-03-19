@@ -181,7 +181,7 @@ public class TargetSystem {
 					continue;
 				}
 
-				if (response.getStatusCode().is2xxSuccessful() && response.hasBody()) {
+				if (response.getStatusCode().is2xxSuccessful() || response.getStatusCode().is3xxRedirection()) {
 					systemIsOnline = true;
 					LOGGER.info("The {} at {}:{}{} is now online.", app, getHost(), getPort(), app.getRootPath());
 					break;
@@ -233,7 +233,7 @@ public class TargetSystem {
 	public static enum Application {
 
 		DVD_STORE("dvdstore", "/dvdstore/home"), HEAT_CLINIC("heat-clinic", "/"), SOCK_SHOP("sock-shop", "/"), SOCK_SHOP_PINNED("sock-shop-pinned", "/"), CMR("cmr",
-				"/rest/data/agents"), CMR_DOCKER_SWARM("cmr-docker", "/"), MONITORING("monitoring", "/rest/data/agents"), CONTINUITY_JMETER("continuity-jmeter", "/available/");
+				"/rest/data/agents"), CMR_DOCKER_SWARM("cmr-docker", "/"), MONITORING("monitoring", "/"), CONTINUITY_JMETER("continuity-jmeter", "/available/");
 
 		private final String name;
 
