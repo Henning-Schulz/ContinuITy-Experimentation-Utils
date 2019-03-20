@@ -168,17 +168,11 @@ public class ModularizationExperiment {
 			order = createOrder(OrderGoal.EXECUTE_LOAD_TEST);
 			order.getOptions().setNumUsers(properties.getLoadTestNumUsers());
 
-			ConcurrentBuilder<StableExperimentBuilder> threadBuilder = builder.newThread();
-
-			threadBuilder = appendMonitoringRestart(threadBuilder);
-			threadBuilder = appendSystemRestart(threadBuilder);
-
-			threadBuilder = threadBuilder.newThread();
-
-			builder = appendJMeterRestart(threadBuilder).join();
+			builder = appendMonitoringRestart(builder);
+			builder = appendSystemRestart(builder);
 
 			builder = appendInitTestExecution(builder);
-			builder = appendTestExecution(builder, order, referenceTestLinks, traceHolder);
+			builder = appendTestExecution(builder, order, referenceTestLinks, traceHolder, properties.getLoadTestDuration() * 1000);
 		} else {
 			builder = builder.append(LocalFile.read(StaticDataHolder.of(Paths.get("reference-traces.json")), traceHolder));
 			testEndDate.set(new Date()); // Will be used as data timestamp
@@ -225,6 +219,8 @@ public class ModularizationExperiment {
 		ContextChange context = new ContextChange(CONTEXT_MODULARIZED_LOADTESTS);
 		builder = builder.append(context.append());
 
+		builder = appendJMeterRestart(builder);
+
 		final SequentialListDataHolder<TestExecution> testExecutionsHolder = new SequentialListDataHolder<>("test-execution", testExecutions);
 		IDataHolder<Order> orderHolder = new SimpleDataHolder<>("load-test-creation-order", Order.class);
 		IDataHolder<OrderResponse> orderResponse = new SimpleDataHolder<>("test-creation-order-response", OrderResponse.class);
@@ -241,11 +237,8 @@ public class ModularizationExperiment {
 				.newThread(); //
 
 		threadBuilder = appendMonitoringRestart(threadBuilder);
-		threadBuilder = appendSystemRestart(threadBuilder);
 
-		threadBuilder = threadBuilder.newThread();
-
-		LoopBuilder<StableExperimentBuilder> loopBuilder = appendJMeterRestart(threadBuilder) //
+		LoopBuilder<StableExperimentBuilder> loopBuilder = appendSystemRestart(threadBuilder) //
 				.join() //
 				.append(new DataInvalidation(testStartDate, testEndDate)) //
 				.append(creationContext.remove()) //
@@ -253,7 +246,8 @@ public class ModularizationExperiment {
 
 		loopBuilder = appendInitTestExecution(loopBuilder);
 
-		builder = appendTestExecution(loopBuilder, createOrder(OrderGoal.EXECUTE_LOAD_TEST), orderReport.processing("created-test-links", OrderReport::getInternalArtifacts), NoopDataHolder.instance()) //
+		builder = appendTestExecution(loopBuilder, createOrder(OrderGoal.EXECUTE_LOAD_TEST), orderReport.processing("created-test-links", OrderReport::getInternalArtifacts), NoopDataHolder.instance(),
+				properties.getLoadTestDuration() * 1000) //
 				.append(executionContext.remove()) //
 				.append(new DataInvalidation(orderHolder, orderResponse, orderReport)) //
 				.append(innerContext.renameBack()) //
@@ -381,7 +375,7 @@ public class ModularizationExperiment {
 		ContextChange context = new ContextChange("init-test");
 
 		builder = builder.append(context.append());
-		builder = appendTestExecution(builder, createOrder(OrderGoal.EXECUTE_LOAD_TEST), initTestLinks, traceHolder);
+		builder = appendTestExecution(builder, createOrder(OrderGoal.EXECUTE_LOAD_TEST), initTestLinks, traceHolder, 60000);
 		return builder.append(context.remove());
 	}
 
@@ -393,7 +387,8 @@ public class ModularizationExperiment {
 	 * @return
 	 * @throws MalformedURLException
 	 */
-	private <B extends ExperimentBuilder<B, C>, C> B appendTestExecution(B builder, Order order, IDataHolder<LinkExchangeModel> source, IDataHolder<String> traceHolder) throws MalformedURLException {
+	private <B extends ExperimentBuilder<B, C>, C> B appendTestExecution(B builder, Order order, IDataHolder<LinkExchangeModel> source, IDataHolder<String> traceHolder, long approxTestDuration)
+			throws MalformedURLException {
 		List<String> metrics = Arrays.asList("request_duration_seconds_count", "process_resident_memory_bytes", "process_cpu_seconds_total", "process_cpu_usage", "jvm_memory_used_bytes");
 		List<String> allServicesToMonitor = Arrays.asList("shipping", "payment", "user", "cart", "orders", "catalogue", "frontend", "jmeter");
 
@@ -406,7 +401,7 @@ public class ModularizationExperiment {
 		return builder.append(Clock.takeTime(testStartDate, -1, 2, 0)) // skip the first two minutes
 																		// (warm up)
 				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), order, orderResponse, source)) //
-				.append(new Delay(properties.getLoadTestDuration() * 1000)) //
+				.append(new Delay(approxTestDuration)) //
 				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), StaticDataHolder.of(order), orderResponse, orderReport,
 						properties.getOrderReportTimeout())) //
 				.append(Clock.takeTime(testEndDate, -1, -2, 0)) // skip the last two minutes (cool
