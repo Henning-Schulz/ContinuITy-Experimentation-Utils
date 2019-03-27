@@ -67,7 +67,6 @@ public class ModularizationExperiment {
 	private IDataHolder<LinkExchangeModel> referenceTestLinks = new SimpleDataHolder<>("reference-test-links", LinkExchangeModel.class);
 	private IDataHolder<Date> testStartDate = new SimpleDataHolder<>("test-start-date", Date.class);
 	private IDataHolder<Date> testEndDate = new SimpleDataHolder<>("test-end-date", Date.class);
-	private IDataHolder<OrderReport> orderReport = new SimpleDataHolder<>("order-report", OrderReport.class);
 	private IDataHolder<OrderReport> referenceExecutionReport = new SimpleDataHolder<>("reference-execution-report", OrderReport.class);
 	private IDataHolder<String> referenceTracesLink = new SimpleDataHolder<>("reference-open-xtraces-link", String.class);
 
@@ -130,6 +129,7 @@ public class ModularizationExperiment {
 				.append(appHolder::next) //
 				.append(appContext.renameBack()) //
 				.endLoop() //
+				.append(new Delay(10000)) //
 				.loop(annPaths.size()) //
 				.append(annContext.rename()) //
 				.append(UploadAnnotation.from(annHolder, annTag).to(properties.getOrchestratorHost(), properties.getOrchestratorPort(), NoopDataHolder.instance())) //
@@ -224,6 +224,7 @@ public class ModularizationExperiment {
 		final SequentialListDataHolder<TestExecution> testExecutionsHolder = new SequentialListDataHolder<>("test-execution", testExecutions);
 		IDataHolder<Order> orderHolder = new SimpleDataHolder<>("load-test-creation-order", Order.class);
 		IDataHolder<OrderResponse> orderResponse = new SimpleDataHolder<>("test-creation-order-response", OrderResponse.class);
+		IDataHolder<OrderReport> orderReport = new SimpleDataHolder<>("test-creation-order-report", OrderReport.class);
 		ContextChange innerContext = new ContextChange(testExecutionsHolder.processing("modularized-test-execution-context", TestExecution::toContext));
 		ContextChange creationContext = new ContextChange("test-creation");
 		ContextChange executionContext = new ContextChange("test-execution");
@@ -402,7 +403,7 @@ public class ModularizationExperiment {
 																		// (warm up)
 				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), order, orderResponse, source)) //
 				.append(new Delay(approxTestDuration)) //
-				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), StaticDataHolder.of(order), orderResponse, orderReport,
+				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), StaticDataHolder.of(order), orderResponse, NoopDataHolder.instance(),
 						properties.getOrderReportTimeout())) //
 				.append(Clock.takeTime(testEndDate, -1, -2, 0)) // skip the last two minutes (cool
 																// down)
