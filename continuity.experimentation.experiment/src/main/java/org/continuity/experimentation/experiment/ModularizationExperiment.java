@@ -84,10 +84,12 @@ public class ModularizationExperiment {
 		StableExperimentBuilder builder = Experiment.newExperiment("exp-modularization");
 
 		builder = appendInitialUploads(builder);
-		builder = appendReferenceLoadTest(builder);
-		builder = appendModularizedTests(builder);
-		builder = appendNonModularizedSessionLogsCreation(builder);
-		builder = builder.append(EmailReport.send());
+		// builder = appendReferenceLoadTest(builder);
+		// builder = appendModularizedTests(builder);
+		builder = appendSessionLogsCreation(builder);
+		builder = appendModularizedTestGeneration(builder);
+		// builder = appendNonModularizedSessionLogsCreation(builder);
+		// builder = builder.append(EmailReport.send());
 
 		return builder.build();
 	}
@@ -146,6 +148,42 @@ public class ModularizationExperiment {
 		String file = path.getFileName().toString();
 
 		return file.substring(file.indexOf("-") + 1, file.lastIndexOf("."));
+	}
+
+	private StableExperimentBuilder appendSessionLogsCreation(StableExperimentBuilder builder) throws MalformedURLException {
+		IDataHolder<String> traceHolder = new SimpleDataHolder<>("open-xtraces", String.class);
+
+		builder = builder.append(LocalFile.read(StaticDataHolder.of(Paths.get("reference-traces.json")), traceHolder));
+		testEndDate.set(new Date()); // Will be used as data timestamp
+
+		ContextChange context = new ContextChange(CONTEXT_SESSION_LOGS_CREATION);
+		builder = builder.append(context.append());
+
+		IDataHolder<LinkExchangeModel> sessionLogsSource = referenceTracesLink.processing("session-logs-source", link -> {
+			LinkExchangeModel source = new LinkExchangeModel();
+			source.getMeasurementDataLinks().setLink(link);
+			source.getMeasurementDataLinks().setLinkType(MeasurementDataLinkType.OPEN_XTRACE);
+			try {
+				source.getMeasurementDataLinks().setTimestamp(testEndDate.get());
+			} catch (AbortInnerException e) {
+				e.printStackTrace();
+				source.getMeasurementDataLinks().setTimestamp(new Date());
+			}
+			return source;
+		});
+
+		IDataHolder<OrderResponse> orderResponse = new SimpleDataHolder<>("session-logs-creation-order-response", OrderResponse.class);
+		Order order = createOrder(OrderGoal.CREATE_SESSION_LOGS);
+
+		builder = builder.append(DataBuffer.upload(properties.getOrchestratorSatelliteHost(), traceHolder, referenceTracesLink)) //
+				.append(new DataInvalidation(traceHolder)) //
+				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), order, orderResponse, sessionLogsSource)) //
+				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), StaticDataHolder.of(order), orderResponse, referenceExecutionReport,
+						properties.getOrderReportTimeout()));
+
+		builder = builder.append(context.remove());
+
+		return builder;
 	}
 
 	/**
@@ -209,6 +247,31 @@ public class ModularizationExperiment {
 		return builder;
 	}
 
+	private StableExperimentBuilder appendModularizedTestGeneration(StableExperimentBuilder builder) throws MalformedURLException {
+		ContextChange context = new ContextChange(CONTEXT_MODULARIZED_LOADTESTS);
+		builder = builder.append(context.append());
+
+		final SequentialListDataHolder<TestExecution> testExecutionsHolder = new SequentialListDataHolder<>("test-execution", testExecutions);
+		IDataHolder<Order> orderHolder = new SimpleDataHolder<>("load-test-creation-order", Order.class);
+		IDataHolder<OrderResponse> orderResponse = new SimpleDataHolder<>("test-creation-order-response", OrderResponse.class);
+		IDataHolder<OrderReport> orderReport = new SimpleDataHolder<>("test-creation-order-report", OrderReport.class);
+		ContextChange innerContext = new ContextChange(testExecutionsHolder.processing("modularized-test-execution-context", TestExecution::toContext));
+
+		builder = builder.loop(testExecutions.size()) //
+				.append(innerContext.rename()) //
+				.append(ctxt -> initLoadTestCreationOrder(testExecutionsHolder, orderHolder)) //
+				.append(new OrderSubmission(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse)) //
+				.append(new WaitForOrderReport(properties.getOrchestratorHost(), properties.getOrchestratorPort(), orderHolder, orderResponse, orderReport, properties.getOrderReportTimeout())) //
+				.append(new DataInvalidation(orderHolder, orderResponse, orderReport)) //
+				.append(innerContext.renameBack()) //
+				.append(testExecutionsHolder::next) //
+				.endLoop();
+
+		builder = builder.append(context.remove());
+
+		return builder;
+	}
+
 	/**
 	 * Executes all modularized load tests.
 	 *
@@ -249,8 +312,8 @@ public class ModularizationExperiment {
 
 		builder = appendTestExecution(loopBuilder, createOrder(OrderGoal.EXECUTE_LOAD_TEST), orderReport.processing("created-test-links", OrderReport::getInternalArtifacts), NoopDataHolder.instance(),
 				properties.getLoadTestDuration() * 1000) //
-				.append(executionContext.remove()) //
-				.append(new DataInvalidation(orderHolder, orderResponse, orderReport)) //
+						.append(executionContext.remove()) //
+						.append(new DataInvalidation(orderHolder, orderResponse, orderReport)) //
 				.append(innerContext.renameBack()) //
 				.append(testExecutionsHolder::next) //
 				.endLoop();
