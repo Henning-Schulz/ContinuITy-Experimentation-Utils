@@ -12,7 +12,7 @@ public enum KnownApplication {
 							"UNDEFINED"), SOCK_SHOP_PINNED("sock-shop-pinned",
 											"docker-compose -f docker-compose.sock-shop.yml kill; docker rm $(docker ps -a -q); docker volume prune -f; docker-compose -f docker-compose.sock-shop.yml up -d",
 											"UNDEFINED"), CONTINUITY_JMETER("continuity-jmeter", "docker stop $(docker ps -aq -f name=jmeter); docker start $(docker ps -aq -f name=jmeter)",
-													"UNDEFINED");
+													"UNDEFINED"), NEXUS("nexus", "restartNexus.sh", "UNDEFINED");
 
 	private static final Map<String, KnownApplication> APP_PER_KEY = new HashMap<>();
 
