@@ -29,13 +29,22 @@ public class Main {
 	private static final String TAG = "sock-shop";
 	private static final String DATE_FORMAT = "yyyy/MM/dd/HH:mm:ss";
 
-	private static void initJMeter() {
-		JMeterEngineGateway.getInstance().initJMeter("jmeter", "bin/jmeter.properties", Locale.ENGLISH);
+	private static void initJMeter(String[] args) {
+		String jmeterHome = "jmeter";
+
+		for (String arg : args) {
+			if (arg.startsWith("--jmeter=")) {
+				jmeterHome = arg.substring("--jmeter=".length());
+				break;
+			}
+		}
+
+		JMeterEngineGateway.getInstance().initJMeter(jmeterHome, "bin/jmeter.properties", Locale.ENGLISH);
 		JMeterUtils.initLogging();
 	}
 
 	public static void main(String[] args) throws AbortException, IOException {
-		initJMeter();
+		initJMeter(args);
 
 		ExperimentProperties props = new ExperimentProperties("config.properties", TAG, DATE_FORMAT);
 		List<TestExecution> testExecutions = readTestExecutions();
